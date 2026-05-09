@@ -20,9 +20,8 @@ export function validateEnv() {
   }
 }
 
-if (typeof window === 'undefined') {
-  validateEnv()
-}
+// Chamar validateEnv() apenas dentro de route handlers em runtime,
+// nunca no topo do módulo — evita falha durante o build do Next.js
 
 export const config = {
   app: {

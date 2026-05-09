@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     ]
   },
   poweredByHeader: false,
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts']
   }
