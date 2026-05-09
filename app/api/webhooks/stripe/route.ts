@@ -1,0 +1,199 @@
+import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
+import { supabaseAdmin } from '@/lib/supabase/admin'
+
+// Necessário para que o Stripe possa verificar a assinatura do webhook
+// O body precisa ser lido como texto raw, não parseado pelo Next.js
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: Request) {
+  const body = await request.text()
+  const signature = request.headers.get('stripe-signature')
+
+  if (!signature) {
+    console.error('Webhook: Stripe-Signature header ausente')
+    return new Response('Webhook Error: Signature ausente', { status: 400 })
+  }
+
+  let event: Stripe.Event
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    )
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message)
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 })
+  }
+
+  // ─── Handlers ────────────────────────────────────────────────────────────────
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleSessionCompleted(event.data.object as Stripe.Checkout.Session)
+        break
+
+      case 'checkout.session.expired':
+        await handleSessionExpired(event.data.object as Stripe.Checkout.Session)
+        break
+
+      default:
+        // Ignorar silenciosamente outros eventos
+        break
+    }
+  } catch (error: any) {
+    console.error(`Erro ao processar webhook ${event.type}:`, error)
+    // Retornar 500 faz o Stripe retentar — retornamos 200 para eventos que não conseguimos processar
+    // para evitar loops de retry em casos irrecuperáveis
+    return new Response('Internal Server Error', { status: 500 })
+  }
+
+  return new Response(null, { status: 200 })
+}
+
+// ─── Handler: Pagamento confirmado ───────────────────────────────────────────
+
+async function handleSessionCompleted(session: Stripe.Checkout.Session) {
+  const orderId = session.metadata?.orderId
+  const userId = session.metadata?.userId
+
+  if (!orderId) {
+    console.warn('Webhook checkout.session.completed: orderId ausente nos metadados')
+    return
+  }
+
+  // Idempotência: verificar se o pedido já foi processado
+  const { data: order, error: fetchError } = await supabaseAdmin
+    .from('orders')
+    .select('id, status')
+    .eq('id', orderId)
+    .single()
+
+  if (fetchError || !order) {
+    throw new Error(`Pedido ${orderId} não encontrado no banco`)
+  }
+
+  if (order.status === 'paid') {
+    console.log(`Pedido ${orderId} já estava pago — ignorando evento duplicado`)
+    return
+  }
+
+  // 1. Atualizar o status do pedido para 'paid'
+  const { error: updateError } = await supabaseAdmin
+    .from('orders')
+    .update({
+      status: 'paid',
+      stripe_payment_intent_id: session.payment_intent as string ?? null,
+    })
+    .eq('id', orderId)
+
+  if (updateError) throw updateError
+
+  // 2. Buscar os itens do pedido com o event_id vindo do JOIN com ticket_types
+  const { data: items, error: itemsError } = await supabaseAdmin
+    .from('order_items')
+    .select(`
+      *,
+      ticket_types ( event_id )
+    `)
+    .eq('order_id', orderId)
+
+  if (itemsError || !items || items.length === 0) {
+    throw new Error(`Itens do pedido ${orderId} não encontrados`)
+  }
+
+  // 3. Gerar um ticket por unidade comprada
+  const ticketsToInsert: any[] = []
+
+  for (const item of items) {
+    const eventId = (item.ticket_types as any)?.event_id
+
+    for (let i = 0; i < item.quantity; i++) {
+      ticketsToInsert.push({
+        order_id: orderId,
+        ticket_type_id: item.ticket_type_id,
+        event_id: eventId,
+        buyer_id: userId,
+        qr_code: crypto.randomUUID(),
+        is_used: false,
+      })
+    }
+  }
+
+  const { error: ticketsError } = await supabaseAdmin
+    .from('tickets')
+    .insert(ticketsToInsert)
+
+  if (ticketsError) throw ticketsError
+
+  console.log(
+    `✅ Pedido ${orderId} confirmado | ${ticketsToInsert.length} ingresso(s) gerado(s)`
+  )
+
+  // 4. Enviar e-mails de confirmação e ingressos
+  try {
+    const { sendOrderAndTicketsEmails } = await import('@/lib/email')
+    await sendOrderAndTicketsEmails(orderId)
+    console.log(`✉️ E-mails enviados para pedido: ${orderId}`)
+  } catch (emailError: any) {
+    console.error(`❌ Erro ao enviar e-mails para o pedido ${orderId}:`, emailError.message)
+    // Não falhamos o webhook porque o pagamento já foi confirmado e os ingressos já foram criados
+  }
+}
+
+// ─── Handler: Sessão expirada no Stripe ──────────────────────────────────────
+
+async function handleSessionExpired(session: Stripe.Checkout.Session) {
+  const orderId = session.metadata?.orderId
+
+  if (!orderId) {
+    console.warn('Webhook checkout.session.expired: orderId ausente nos metadados')
+    return
+  }
+
+  // Idempotência: verificar se o pedido ainda está pendente
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('id, status')
+    .eq('id', orderId)
+    .single()
+
+  if (!order || order.status !== 'pending') {
+    console.log(`Pedido ${orderId} não está mais pendente — ignorando`)
+    return
+  }
+
+  // Buscar itens para devolver ingressos ao estoque
+  const { data: items } = await supabaseAdmin
+    .from('order_items')
+    .select('*')
+    .eq('order_id', orderId)
+
+  if (items) {
+    for (const item of items) {
+      const { data: tt } = await supabaseAdmin
+        .from('ticket_types')
+        .select('quantity_sold')
+        .eq('id', item.ticket_type_id)
+        .single()
+
+      if (tt) {
+        await supabaseAdmin
+          .from('ticket_types')
+          .update({ quantity_sold: Math.max(0, tt.quantity_sold - item.quantity) })
+          .eq('id', item.ticket_type_id)
+      }
+    }
+  }
+
+  // Cancelar o pedido
+  await supabaseAdmin
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', orderId)
+
+  console.log(`🕐 Pedido ${orderId} expirado e cancelado pelo Stripe`)
+}
