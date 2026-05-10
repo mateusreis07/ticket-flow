@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import { Sparkles, Search, CalendarX } from 'lucide-react'
+import { Sparkles, CalendarX } from 'lucide-react'
 import EventCard from '@/components/events/EventCard'
 import HeroSearchInput from '@/components/search/HeroSearchInput'
 import { CATEGORIES } from '@/lib/constants/events'

@@ -140,7 +140,6 @@ export default async function BuscaPage({
           <Pagination 
             currentPage={results.page} 
             totalPages={results.totalPages} 
-            searchParams={params} 
           />
         </div>
       </div>

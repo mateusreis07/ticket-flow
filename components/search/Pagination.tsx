@@ -1,15 +1,13 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { EventSearchParams } from '@/types'
 
 interface PaginationProps {
   currentPage: number
   totalPages: number
-  searchParams: EventSearchParams
 }
 
-export default function Pagination({ currentPage, totalPages, searchParams }: PaginationProps) {
+export default function Pagination({ currentPage, totalPages }: PaginationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const currentSearchParams = useSearchParams()
@@ -38,8 +36,8 @@ export default function Pagination({ currentPage, totalPages, searchParams }: Pa
         pages.push('...')
       }
       
-      let start = Math.max(2, currentPage - 1)
-      let end = Math.min(totalPages - 1, currentPage + 1)
+      const start = Math.max(2, currentPage - 1)
+      const end = Math.min(totalPages - 1, currentPage + 1)
       
       for (let i = start; i <= end; i++) {
         pages.push(i)

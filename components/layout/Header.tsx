@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
 import { LogOut, LayoutDashboard, Ticket } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import HeaderSearch from '@/components/search/HeaderSearch'

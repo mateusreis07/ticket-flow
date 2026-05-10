@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { EventCategory, EventSearchParams, EventSearchResult, PaginatedResult } from '@/types'
+import { EventSearchParams, EventSearchResult, PaginatedResult } from '@/types'
 
 export async function searchEvents(params: EventSearchParams): Promise<PaginatedResult<EventSearchResult>> {
   const supabase = await createClient()
