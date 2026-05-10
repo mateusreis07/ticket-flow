@@ -126,3 +126,47 @@ export type RecentOrder = {
   items_count: number
   tickets_count: number
 }
+
+export type EventCategory = 
+  | 'show' | 'festival' | 'workshop' | 'teatro'
+  | 'esporte' | 'gastronomia' | 'tecnologia'
+  | 'arte' | 'religioso' | 'outros'
+
+export type EventSearchParams = {
+  q?: string
+  city?: string
+  category?: EventCategory
+  date_from?: string
+  date_to?: string
+  price_min?: number
+  price_max?: number
+  sort?: 'date_asc' | 'date_desc' | 'price_asc' | 'price_desc'
+  page?: number
+}
+
+export type EventSearchResult = {
+  id: string
+  title: string
+  description: string | null
+  cover_image_url: string | null
+  location: string
+  city: string
+  state: string
+  event_date: string
+  event_time: string
+  category: EventCategory
+  status: string
+  organizer_name: string
+  min_price: number
+  max_price: number
+  total_sold: number
+  total_capacity: number
+}
+
+export type PaginatedResult<T> = {
+  data: T[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
+}

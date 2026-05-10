@@ -7,6 +7,7 @@ Sempre que subir atualizações para o Vercel, valide os pontos abaixo no ambien
 - [ ] Banner de modo teste aparece em amarelo
 - [ ] Login funciona
 - [ ] Criar evento funciona
+- [ ] Criar/adicionar Ingressos ao evento funciona
 - [ ] Página pública do evento abre
 
 ## Teste completo (após deploy de funcionalidade nova):

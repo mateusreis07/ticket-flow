@@ -1,6 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { Sparkles, Search, CalendarX } from 'lucide-react'
 import EventCard from '@/components/events/EventCard'
+import HeroSearchInput from '@/components/search/HeroSearchInput'
+import { CATEGORIES } from '@/lib/constants/events'
+import Link from 'next/link'
 
 export default async function Home() {
   // Fetch events with relations using admin client to bypass RLS
@@ -64,18 +67,19 @@ export default async function Home() {
             Encontre shows, festivais, workshops e muito mais. Compre seu ingresso com segurança em minutos.
           </p>
 
-          <div className="mt-10 max-w-lg mx-auto shadow-xl shadow-gray-200/50 rounded-2xl border border-gray-200 flex items-center overflow-hidden bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-            <div className="pl-5 text-gray-400">
-              <Search className="h-5 w-5" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Buscar eventos, artistas ou locais..." 
-              className="flex-1 px-4 py-4 text-base outline-none bg-transparent"
-            />
-            <button className="bg-primary text-white px-8 py-4 font-semibold hover:bg-primary-hover transition-colors">
-              Buscar
-            </button>
+          <HeroSearchInput />
+          
+          <div className="flex gap-2 justify-center flex-wrap mt-4">
+            {CATEGORIES.slice(0, 5).map(cat => (
+              <Link 
+                key={cat.value}
+                href={`/busca?category=${cat.value}`}
+                className="rounded-full border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:border-primary hover:text-primary transition-colors bg-white shadow-sm flex items-center gap-1.5"
+              >
+                <span>{cat.emoji}</span>
+                {cat.label}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -85,18 +89,27 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Próximos eventos</h2>
+              <h2 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-4">
+                Próximos eventos
+                <Link href="/busca" className="text-sm font-medium text-primary hover:text-primary-hover transition-colors">
+                  Ver todos os eventos →
+                </Link>
+              </h2>
               <p className="text-gray-500 mt-2">Eventos confirmados e com ingressos disponíveis</p>
             </div>
             
             <div className="flex flex-wrap items-center gap-2">
-              <button className="rounded-full px-5 py-2 text-sm font-medium border bg-primary text-white border-primary">
+              <Link href="/busca" className="rounded-full px-5 py-2 text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary/50 hover:bg-gray-50 transition-colors">
                 Todos
-              </button>
-              {['Shows', 'Festivais', 'Workshops', 'Teatro'].map(cat => (
-                <button key={cat} className="rounded-full px-5 py-2 text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary/50 hover:bg-gray-50 transition-colors">
-                  {cat}
-                </button>
+              </Link>
+              {CATEGORIES.slice(0, 4).map(cat => (
+                <Link 
+                  key={cat.value}
+                  href={`/busca?category=${cat.value}`}
+                  className="rounded-full px-5 py-2 text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary/50 hover:bg-gray-50 transition-colors"
+                >
+                  {cat.label}
+                </Link>
               ))}
             </div>
           </div>
@@ -104,7 +117,7 @@ export default async function Home() {
           {events && events.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {events.map(event => (
-                <EventCard key={event.id} event={event} />
+                <EventCard key={event.id} event={event as any} />
               ))}
             </div>
           ) : (

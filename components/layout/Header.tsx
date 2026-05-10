@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { LogOut, LayoutDashboard, Ticket } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import HeaderSearch from '@/components/search/HeaderSearch'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,8 +53,13 @@ export default async function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold text-gray-900 text-xl">
           <Ticket className="h-6 w-6 text-primary" />
-          <span>TicketFlow</span>
+          <span className="hidden sm:inline">TicketFlow</span>
         </Link>
+
+        {/* Search Bar (Client Component) */}
+        <div className="flex-1 max-w-md mx-4 hidden sm:block">
+          <HeaderSearch />
+        </div>
 
         {/* Navigation */}
         <nav className="flex items-center gap-4">

@@ -18,6 +18,7 @@ export async function createEvent(formData: FormData) {
   const event_date = formData.get('event_date') as string
   const event_time = formData.get('event_time') as string
   const cover_image_url = formData.get('cover_image_url') as string
+  const category = formData.get('category') as string
   const action = formData.get('action') as string // 'draft' or 'publish'
 
   const { error } = await supabase.from('events').insert({
@@ -29,6 +30,7 @@ export async function createEvent(formData: FormData) {
     state,
     event_date,
     event_time,
+    category,
     cover_image_url: cover_image_url || null,
     status: action === 'publish' ? 'published' : 'draft'
   })
@@ -53,6 +55,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const event_date = formData.get('event_date') as string
   const event_time = formData.get('event_time') as string
   const cover_image_url = formData.get('cover_image_url') as string
+  const category = formData.get('category') as string
   const action = formData.get('action') as string // 'draft' or 'publish'
 
   const { error } = await supabase
@@ -65,6 +68,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
       state,
       event_date,
       event_time,
+      category,
       cover_image_url: cover_image_url || null,
       status: action === 'publish' ? 'published' : 'draft'
     })

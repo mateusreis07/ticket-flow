@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { ImagePlus, Rocket, X } from 'lucide-react'
 import Image from 'next/image'
 import { Switch } from '@/components/ui/switch'
 import { uploadEventCover } from '@/lib/actions/events'
+import { CATEGORIES } from '@/lib/constants/events'
 
 const eventSchema = z.object({
   title: z.string().min(5, 'O nome deve ter no mínimo 5 caracteres'),
@@ -17,6 +18,13 @@ const eventSchema = z.object({
   state: z.string().length(2, 'Use a sigla do estado (ex: SP)'),
   event_date: z.string().min(1, 'Informe a data do evento'),
   event_time: z.string().min(1, 'Informe o horário'),
+  category: z.enum([
+    'show','festival','workshop','teatro',
+    'esporte','gastronomia','tecnologia',
+    'arte','religioso','outros'
+  ], {
+    error: 'Selecione uma categoria'
+  }),
 })
 
 type EventFormValues = z.infer<typeof eventSchema>
@@ -36,7 +44,7 @@ export default function EventForm({ initialValues, onSubmitAction, submitLabel =
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitAction, setSubmitAction] = useState<'draft' | 'publish'>('publish')
 
-  const { register, handleSubmit, formState: { errors } } = useForm<EventFormValues>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: initialValues?.title || '',
@@ -46,6 +54,7 @@ export default function EventForm({ initialValues, onSubmitAction, submitLabel =
       state: initialValues?.state || '',
       event_date: initialValues?.event_date || '',
       event_time: initialValues?.event_time || '',
+      category: initialValues?.category || 'outros',
     }
   })
 
@@ -133,6 +142,37 @@ export default function EventForm({ initialValues, onSubmitAction, submitLabel =
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none"
                 placeholder="Conte sobre o seu evento..."
               />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Categoria do evento *</label>
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                    {CATEGORIES.map((cat) => {
+                      const isSelected = field.value === cat.value
+                      return (
+                        <div
+                          key={cat.value}
+                          onClick={() => field.onChange(cat.value)}
+                          className={`
+                            flex flex-col items-center justify-center p-3 rounded-xl cursor-pointer transition-all
+                            ${isSelected 
+                              ? 'border-2 border-primary bg-primary-light text-primary' 
+                              : 'border border-gray-200 hover:border-primary/50 text-gray-600'}
+                          `}
+                        >
+                          <span className="text-2xl mb-1">{cat.emoji}</span>
+                          <span className="text-xs font-medium text-center">{cat.label}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              />
+              {errors.category && <span className="text-red-500 text-xs mt-1 block">{errors.category.message}</span>}
             </div>
           </div>
         </div>
