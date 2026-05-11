@@ -11,7 +11,7 @@ const withPWA = withPWAInit({
   workboxOptions: {
     skipWaiting: true,
     clientsClaim: true,
-    importScripts: ['/worker-push.js'],
+    importScripts: ['/push-sw.js'],
   },
 });
 

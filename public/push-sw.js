@@ -1,5 +1,5 @@
-// TicketFlow Custom Service Worker — Push Notifications
-// Este arquivo é carregado pelo next-pwa além do SW base gerado automaticamente
+// TicketFlow Push Notification Worker
+console.log('[SW-Push] Lógica de notificações push carregada.');
 
 self.addEventListener('push', function (event) {
   if (!event.data) return
