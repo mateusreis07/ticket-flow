@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { LogOut, LayoutDashboard, Ticket } from 'lucide-react'
+import { LogOut, LayoutDashboard, Ticket, Settings as SettingsIcon } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import HeaderSearch from '@/components/search/HeaderSearch'
 import NotificationBell from '@/components/notifications/NotificationBell'
@@ -48,10 +48,10 @@ export default async function Header() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-gray-900 text-xl">
+        <Link href="/" className="flex items-center gap-2 font-bold text-gray-900 text-xl hover:opacity-80 active:scale-95 transition-all">
           <Ticket className="h-6 w-6 text-primary" />
           <span className="hidden sm:inline">TicketFlow</span>
         </Link>
@@ -66,17 +66,17 @@ export default async function Header() {
           {user ? (
             <div className="flex items-center gap-3">
               {profile?.role === 'organizer' ? (
-                <Link href="/dashboard" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+                <Link href="/dashboard" className="text-gray-600 hover:text-primary active:scale-95 transition-all flex items-center gap-2 text-sm font-medium px-2 py-1 rounded-lg hover:bg-primary/5">
                   <LayoutDashboard className="h-4 w-4" />
                   <span className="hidden sm:inline">Dashboard</span>
                 </Link>
               ) : (
                 <>
-                  <Link href="/meus-ingressos" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+                  <Link href="/meus-ingressos" className="text-gray-600 hover:text-primary active:scale-95 transition-all flex items-center gap-2 text-sm font-medium px-2 py-1 rounded-lg hover:bg-primary/5">
                     <Ticket className="h-4 w-4" />
                     <span className="hidden sm:inline">Meus ingressos</span>
                   </Link>
-                  <Link href="/meus-organizadores" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+                  <Link href="/meus-organizadores" className="text-gray-600 hover:text-primary active:scale-95 transition-all flex items-center gap-2 text-sm font-medium px-2 py-1 rounded-lg hover:bg-primary/5">
                     <span className="hidden sm:inline">Organizadores</span>
                   </Link>
                 </>
@@ -88,13 +88,13 @@ export default async function Header() {
               {/* Avatar dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none">
-                  <Avatar className="h-9 w-9 bg-primary-light text-primary border border-primary/10 hover:opacity-80 transition-opacity">
+                  <Avatar className="h-9 w-9 bg-primary-light text-primary border border-primary/10 hover:ring-2 hover:ring-primary/20 active:scale-90 transition-all">
                     <AvatarFallback className="font-semibold text-xs">
                       {profile?.name ? getInitials(profile.name) : user.email?.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200 shadow-xl">
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>
                       <div className="flex flex-col">
@@ -104,32 +104,36 @@ export default async function Header() {
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem render={
-                    <Link href="/dashboard/configuracoes" className="flex w-full items-center gap-2 text-gray-700">
+                  <DropdownMenuItem className="p-0">
+                    <Link 
+                      href="/dashboard/configuracoes" 
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      <SettingsIcon className="h-4 w-4 text-gray-500" />
                       Configurações
                     </Link>
-                  } />
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem render={
+                  <DropdownMenuItem className="p-0">
                     <form action={signOut} className="w-full">
-                      <button className="flex w-full items-center gap-2 text-destructive">
+                      <button className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-red-50 transition-colors w-full text-left">
                         <LogOut className="h-4 w-4" />
                         <span>Sair</span>
                       </button>
                     </form>
-                  } />
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/auth/login">
-                <button className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg px-4 py-2 transition-all text-sm font-medium">
+                <button className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg px-4 py-2 active:scale-95 transition-all text-sm font-medium">
                   Entrar
                 </button>
               </Link>
               <Link href="/auth/cadastro">
-                <button className="bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary-hover font-medium transition-colors text-sm shadow-sm">
+                <button className="bg-primary text-white rounded-lg px-4 py-2 hover:bg-primary-hover hover:shadow-md active:scale-95 transition-all text-sm font-medium shadow-sm">
                   Cadastrar
                 </button>
               </Link>
