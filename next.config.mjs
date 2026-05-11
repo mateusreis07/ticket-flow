@@ -1,5 +1,6 @@
 import withPWAInit from '@ducanh2912/next-pwa';
 
+// Build: 2026-05-11-v1
 const withPWA = withPWAInit({
   dest: 'public',
   cacheOnFrontEndNav: true,
