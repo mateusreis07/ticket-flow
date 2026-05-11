@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { LogOut, LayoutDashboard, Ticket } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import HeaderSearch from '@/components/search/HeaderSearch'
+import NotificationBell from '@/components/notifications/NotificationBell'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,15 +56,15 @@ export default async function Header() {
           <span className="hidden sm:inline">TicketFlow</span>
         </Link>
 
-        {/* Search Bar (Client Component) */}
+        {/* Search Bar */}
         <div className="flex-1 max-w-md mx-4 hidden sm:block">
           <HeaderSearch />
         </div>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3">
           {user ? (
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
               {profile?.role === 'organizer' ? (
                 <Link href="/dashboard" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
                   <LayoutDashboard className="h-4 w-4" />
@@ -76,6 +77,10 @@ export default async function Header() {
                 </Link>
               )}
 
+              {/* 🔔 Sino de notificações */}
+              <NotificationBell userId={user.id} />
+
+              {/* Avatar dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none">
                   <Avatar className="h-9 w-9 bg-primary-light text-primary border border-primary/10 hover:opacity-80 transition-opacity">
@@ -93,6 +98,12 @@ export default async function Header() {
                       </div>
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem render={
+                    <Link href="/dashboard/configuracoes" className="flex w-full items-center gap-2 text-gray-700">
+                      Configurações
+                    </Link>
+                  } />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem render={
                     <form action={signOut} className="w-full">

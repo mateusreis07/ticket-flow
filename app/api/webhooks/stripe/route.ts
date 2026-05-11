@@ -138,9 +138,31 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     const { sendOrderAndTicketsEmails } = await import('@/lib/email')
     await sendOrderAndTicketsEmails(orderId)
     console.log(`✉️ E-mails enviados para pedido: ${orderId}`)
-  } catch (emailError: any) {
-    console.error(`❌ Erro ao enviar e-mails para o pedido ${orderId}:`, emailError.message)
-    // Não falhamos o webhook porque o pagamento já foi confirmado e os ingressos já foram criados
+  } catch (emailError: unknown) {
+    const err = emailError as Error
+    console.error(`❌ Erro ao enviar e-mails para o pedido ${orderId}:`, err.message)
+  }
+
+  // 5. Enviar push notification de confirmação (não bloqueia o webhook)
+  if (userId) {
+    try {
+      const { sendOrderConfirmedPush } = await import('@/lib/push-notifications')
+      // Buscar título do evento via primeiro item do pedido
+      const { data: firstItem } = await supabaseAdmin
+        .from('order_items')
+        .select('ticket_types(events(title))')
+        .eq('order_id', orderId)
+        .limit(1)
+        .single()
+
+      const eventTitle = (firstItem?.ticket_types as unknown as { events?: { title: string } })?.events?.title ?? 'seu evento'
+      await sendOrderConfirmedPush(userId, eventTitle, orderId)
+      console.log(`🔔 Push notification enviada para pedido: ${orderId}`)
+    } catch (pushError: unknown) {
+      const err = pushError as Error
+      console.error(`❌ Erro ao enviar push para o pedido ${orderId}:`, err.message)
+      // Nunca bloquear o webhook por causa do push
+    }
   }
 }
 
