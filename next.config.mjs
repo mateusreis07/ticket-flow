@@ -1,6 +1,5 @@
 import withPWAInit from '@ducanh2912/next-pwa';
 
-// Build: 2026-05-11-v1
 const withPWA = withPWAInit({
   dest: 'public',
   cacheOnFrontEndNav: true,
@@ -39,10 +38,10 @@ const nextConfig = {
   },
   poweredByHeader: false,
   eslint: {
-    ignoreDuringBuilds: true, // Evitar falhas de lint no build para focar no PWA
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true, // Evitar falhas de tipo no build para focar no PWA
+    ignoreBuildErrors: false,
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts'],

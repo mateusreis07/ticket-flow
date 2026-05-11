@@ -1,6 +1,4 @@
 // TicketFlow Push Notification Worker
-console.log('[SW-Push] Lógica de notificações push carregada.');
-
 self.addEventListener('push', function (event) {
   if (!event.data) return
 
