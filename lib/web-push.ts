@@ -1,12 +1,6 @@
 import webPush from 'web-push'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 
-webPush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 export type PushPayload = {
   title: string
   body: string
@@ -15,6 +9,23 @@ export type PushPayload = {
   type: 'order_confirmed' | 'event_reminder' | 'event_cancelled' | 'ticket_transferred' | 'new_event' | 'promotional'
   actions?: Array<{ action: string; title: string }>
   requireInteraction?: boolean
+}
+
+// Inicialização lazy: evita falha durante o build quando as variáveis não estão disponíveis
+function getWebPush() {
+  const subject = process.env.VAPID_EMAIL
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+
+  if (!subject || !publicKey || !privateKey) {
+    throw new Error(
+      '[web-push] Variáveis VAPID não configuradas. ' +
+      'Verifique VAPID_EMAIL, NEXT_PUBLIC_VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY.'
+    )
+  }
+
+  webPush.setVapidDetails(subject, publicKey, privateKey)
+  return webPush
 }
 
 export async function sendPushToUser(
@@ -52,9 +63,11 @@ export async function sendPushToUser(
     notificationId: notificationRecord?.id,
   })
 
+  const wp = getWebPush()
+
   for (const sub of subscriptions) {
     try {
-      await webPush.sendNotification(
+      await wp.sendNotification(
         {
           endpoint: sub.endpoint,
           keys: { p256dh: sub.p256dh, auth: sub.auth },
