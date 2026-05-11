@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, BellOff, BellRing, Loader2 } from 'lucide-react'
+import { Bell, BellOff, BellRing, Loader2, AlertCircle } from 'lucide-react'
 
 interface PushManagerProps {
   userId: string
@@ -18,10 +18,21 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray
 }
 
+// Timeout de segurança para evitar loading infinito
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout (${ms}ms): ${label}`)), ms)
+    ),
+  ])
+}
+
 export default function PushManager({ userId }: PushManagerProps) {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -31,42 +42,62 @@ export default function PushManager({ userId }: PushManagerProps) {
 
     setPermission(Notification.permission)
 
-    navigator.serviceWorker.ready
+    // Verificar subscription existente com timeout
+    withTimeout(navigator.serviceWorker.ready, 5000, 'serviceWorker.ready')
       .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setIsSubscribed(!!sub))
-      .catch(() => setIsSubscribed(false))
+      .catch((err) => {
+        console.warn('[PushManager] SW não pronto na inicialização:', err.message)
+        setIsSubscribed(false)
+      })
   }, [userId])
 
   const subscribe = async () => {
-    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-      console.error('NEXT_PUBLIC_VAPID_PUBLIC_KEY não configurada')
-      return
-    }
-
     setIsLoading(true)
+    setErrorMsg(null)
+
     try {
+      // 1. Verificar variável VAPID
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      if (!vapidKey) {
+        throw new Error('NEXT_PUBLIC_VAPID_PUBLIC_KEY não configurada no ambiente.')
+      }
+
+      // 2. Solicitar permissão
       const result = await Notification.requestPermission()
       setPermission(result)
-
       if (result === 'denied') {
         setIsLoading(false)
         return
       }
 
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-        ) as unknown as BufferSource,
-      })
+      // 3. Aguardar SW com timeout de 8 segundos
+      console.log('[PushManager] Aguardando Service Worker...')
+      const reg = await withTimeout(
+        navigator.serviceWorker.ready,
+        8000,
+        'serviceWorker.ready na subscrição'
+      )
+      console.log('[PushManager] SW pronto:', reg.scope)
+
+      // 4. Criar subscription com timeout de 10 segundos
+      console.log('[PushManager] Criando subscription push...')
+      const sub = await withTimeout(
+        reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+        }),
+        10000,
+        'pushManager.subscribe'
+      )
+      console.log('[PushManager] Subscription criada:', sub.endpoint.substring(0, 50) + '...')
 
       const p256dh = sub.getKey('p256dh')
       const auth = sub.getKey('auth')
+      if (!p256dh || !auth) throw new Error('Chaves de criptografia não disponíveis.')
 
-      if (!p256dh || !auth) throw new Error('Keys not available')
-
-      await fetch('/api/push/subscribe', {
+      // 5. Salvar no servidor
+      const response = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,9 +110,17 @@ export default function PushManager({ userId }: PushManagerProps) {
         }),
       })
 
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(`Erro na API: ${data.error ?? response.status}`)
+      }
+
+      console.log('[PushManager] ✅ Subscription salva com sucesso')
       setIsSubscribed(true)
-    } catch (err) {
-      console.error('[PushManager] Erro ao ativar notificações:', err)
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Erro desconhecido')
+      console.error('[PushManager] ❌ Erro ao ativar notificações:', error.message)
+      setErrorMsg(diagnosticMessage(error.message))
     } finally {
       setIsLoading(false)
     }
@@ -89,10 +128,10 @@ export default function PushManager({ userId }: PushManagerProps) {
 
   const unsubscribe = async () => {
     setIsLoading(true)
+    setErrorMsg(null)
     try {
-      const reg = await navigator.serviceWorker.ready
+      const reg = await withTimeout(navigator.serviceWorker.ready, 5000, 'SW ready on unsub')
       const sub = await reg.pushManager.getSubscription()
-
       if (sub) {
         await fetch('/api/push/unsubscribe', {
           method: 'POST',
@@ -101,19 +140,27 @@ export default function PushManager({ userId }: PushManagerProps) {
         })
         await sub.unsubscribe()
       }
-
       setIsSubscribed(false)
-    } catch (err) {
-      console.error('[PushManager] Erro ao desativar notificações:', err)
+    } catch (err: unknown) {
+      console.error('[PushManager] Erro ao desativar:', err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Browser não suporta PWA push
+  // Mensagem amigável por categoria de erro
+  function diagnosticMessage(msg: string): string {
+    if (msg.includes('NEXT_PUBLIC_VAPID')) return 'Configuração incompleta no servidor. Contate o suporte.'
+    if (msg.includes('Timeout') && msg.includes('serviceWorker')) return 'Service Worker não carregou. Tente recarregar a página.'
+    if (msg.includes('Timeout') && msg.includes('subscribe')) return 'O navegador demorou para responder. Verifique sua conexão e tente novamente.'
+    if (msg.includes('API')) return `Erro ao salvar configuração: ${msg}`
+    return 'Não foi possível ativar. Recarregue a página e tente novamente.'
+  }
+
+  // Browser não suporta
   if (permission === 'unsupported') return null
 
-  // Notificações explicitamente bloqueadas pelo usuário
+  // Bloqueado pelo usuário
   if (permission === 'denied') {
     return (
       <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -128,7 +175,7 @@ export default function PushManager({ userId }: PushManagerProps) {
     )
   }
 
-  // Já está inscrito
+  // Já inscrito
   if (isSubscribed) {
     return (
       <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl p-4">
@@ -153,7 +200,7 @@ export default function PushManager({ userId }: PushManagerProps) {
     )
   }
 
-  // Não inscrito — mostrar convite
+  // Não inscrito
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-1">
@@ -163,6 +210,15 @@ export default function PushManager({ userId }: PushManagerProps) {
       <p className="text-sm text-gray-500 mb-4">
         Receba lembretes dos seus eventos e confirmações de compra direto no celular.
       </p>
+
+      {/* Mensagem de erro visível */}
+      {errorMsg && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-red-700">{errorMsg}</p>
+        </div>
+      )}
+
       <button
         onClick={subscribe}
         disabled={isLoading}
@@ -176,7 +232,7 @@ export default function PushManager({ userId }: PushManagerProps) {
         ) : (
           <>
             <Bell className="h-4 w-4" />
-            Ativar notificações
+            {errorMsg ? 'Tentar novamente' : 'Ativar notificações'}
           </>
         )}
       </button>
