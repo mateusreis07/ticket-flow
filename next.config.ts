@@ -1,46 +1,48 @@
 import type { NextConfig } from 'next'
-import withPWAInit from 'next-pwa'
+import withPWAInit from '@ducanh2912/next-pwa'
 
 const withPWA = withPWAInit({
   dest: 'public',
-  register: true,
-  skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  customWorkerDir: 'worker',
-  runtimeCaching: [
-    {
-      urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'supabase-cache',
-        expiration: { maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 },
+  register: true,
+  workboxOptions: {
+    skipWaiting: true,
+    importScripts: ['/worker-push.js'],
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'supabase-cache',
+          expiration: { maxEntries: 32, maxAgeSeconds: 24 * 60 * 60 },
+        },
       },
-    },
-    {
-      urlPattern: /^https:\/\/api\.qrserver\.com\/.*/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'qr-code-cache',
-        expiration: { maxEntries: 64, maxAgeSeconds: 7 * 24 * 60 * 60 },
+      {
+        urlPattern: /^https:\/\/api\.qrserver\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'qr-code-cache',
+          expiration: { maxEntries: 64, maxAgeSeconds: 7 * 24 * 60 * 60 },
+        },
       },
-    },
-    {
-      urlPattern: /\/_next\/image\?url=.+/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'next-image-cache',
-        expiration: { maxEntries: 64, maxAgeSeconds: 24 * 60 * 60 },
+      {
+        urlPattern: /\/_next\/image\?url=.+/i,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'next-image-cache',
+          expiration: { maxEntries: 64, maxAgeSeconds: 24 * 60 * 60 },
+        },
       },
-    },
-    {
-      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'google-fonts-cache',
-        expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 },
+      {
+        urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-cache',
+          expiration: { maxEntries: 10, maxAgeSeconds: 365 * 24 * 60 * 60 },
+        },
       },
-    },
-  ],
+    ],
+  },
   fallbacks: {
     document: '/offline',
   },
