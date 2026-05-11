@@ -170,3 +170,32 @@ export type PaginatedResult<T> = {
   perPage: number
   totalPages: number
 }
+
+export type OrganizerProfile = {
+  id: string
+  name: string
+  username: string | null
+  bio: string | null
+  avatar_url: string | null
+  cover_url: string | null
+  website: string | null
+  instagram: string | null
+  facebook: string | null
+  whatsapp: string | null
+  city: string | null
+  state: string | null
+  is_verified: boolean
+  created_at: string
+  published_events_count: number
+  upcoming_events_count: number
+  past_events_count: number
+  total_tickets_sold: number
+  followers_count: number
+}
+
+export type Follow = {
+  id: string
+  follower_id: string
+  following_id: string
+  created_at: string
+}

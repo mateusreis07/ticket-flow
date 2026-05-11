@@ -4,6 +4,8 @@ import EventCard from '@/components/events/EventCard'
 import HeroSearchInput from '@/components/search/HeroSearchInput'
 import { CATEGORIES } from '@/lib/constants/events'
 import Link from 'next/link'
+import { getTopOrganizers } from '@/lib/queries/organizers'
+import { OrganizerCard } from '@/components/organizers/OrganizerCard'
 
 export default async function Home() {
   // Fetch events with relations using admin client to bypass RLS
@@ -18,6 +20,8 @@ export default async function Home() {
     .gte('event_date', new Date().toISOString().split('T')[0])
     .order('event_date', { ascending: true })
     .limit(12)
+
+  const topOrganizers = await getTopOrganizers(6)
 
   // Format events to match EventCard props
   const events = rawEvents?.map(event => {
@@ -39,6 +43,7 @@ export default async function Home() {
     return {
       ...event,
       organizer_name: event.profiles?.name || 'Organizador',
+      organizer_username: event.profiles?.username,
       min_price,
       max_price,
       total_sold,
@@ -83,6 +88,26 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Top Organizers Section */}
+      {topOrganizers.length > 0 && (
+        <section className="py-10 bg-gray-50 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Organizadores em destaque</h2>
+              <Link href="/organizadores" className="text-sm text-primary font-medium hover:text-primary-hover transition-colors">
+                Ver todos
+              </Link>
+            </div>
+            
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-6 md:overflow-visible md:pb-0">
+              {topOrganizers.map(organizer => (
+                <OrganizerCard key={organizer.id} organizer={organizer} variant="small" />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Events Section */}
       <section className="py-16 px-4 flex-1">

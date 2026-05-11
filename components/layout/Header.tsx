@@ -71,10 +71,15 @@ export default async function Header() {
                   <span className="hidden sm:inline">Dashboard</span>
                 </Link>
               ) : (
-                <Link href="/meus-ingressos" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
-                  <Ticket className="h-4 w-4" />
-                  <span className="hidden sm:inline">Meus ingressos</span>
-                </Link>
+                <>
+                  <Link href="/meus-ingressos" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+                    <Ticket className="h-4 w-4" />
+                    <span className="hidden sm:inline">Meus ingressos</span>
+                  </Link>
+                  <Link href="/meus-organizadores" className="text-gray-600 hover:text-primary transition-colors flex items-center gap-2 text-sm font-medium">
+                    <span className="hidden sm:inline">Organizadores</span>
+                  </Link>
+                </>
               )}
 
               {/* 🔔 Sino de notificações */}

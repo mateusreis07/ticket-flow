@@ -61,9 +61,19 @@ export default function EventCard({ event }: { event: any }) {
           </div>
 
           <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-xs text-gray-400 truncate max-w-[60%]">
-              por {event.organizer_name}
-            </span>
+            {event.organizer_username ? (
+              <Link 
+                href={`/organizadores/${event.organizer_username}`}
+                className="text-xs text-gray-400 hover:text-primary transition-colors truncate max-w-[60%]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                por {event.organizer_name}
+              </Link>
+            ) : (
+              <span className="text-xs text-gray-400 truncate max-w-[60%]">
+                por {event.organizer_name}
+              </span>
+            )}
             {!isSoldOut && event.total_capacity > 0 && (
               <span className="text-[10px] uppercase font-bold text-gray-400">
                 {event.total_capacity - event.total_sold} disponíveis

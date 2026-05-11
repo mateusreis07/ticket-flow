@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import { CalendarDays, MapPin, Clock, XCircle } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarDays, MapPin, Clock, XCircle, BadgeCheck } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import TicketSelectorManager from '@/components/events/TicketSelectorManager'
 
@@ -29,7 +30,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
     .from('events')
     .select(`
       *,
-      profiles ( name )
+      profiles ( name, username, avatar_url, is_verified )
     `)
     .eq('id', params.id)
     .eq('status', 'published')
@@ -131,14 +132,36 @@ export default async function EventPage({ params }: { params: { id: string } }) 
               </div>
             </section>
 
-            <section className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm flex items-center gap-5">
-              <div className="h-16 w-16 bg-gradient-to-br from-primary-light to-primary rounded-full flex items-center justify-center text-white text-xl font-bold shadow-md">
-                {event.profiles?.name?.substring(0, 2).toUpperCase() || 'OG'}
-              </div>
-              <div>
-                <p className="text-sm text-primary font-bold uppercase tracking-wider mb-1">Organizador</p>
-                <h3 className="font-bold text-gray-900 text-xl">{event.profiles?.name || 'Não informado'}</h3>
-              </div>
+            <section className="bg-white rounded-3xl p-6 md:p-8 border border-gray-100 shadow-sm">
+              <p className="text-sm text-primary font-bold uppercase tracking-wider mb-4">Organizador</p>
+              
+              {event.profiles?.username ? (
+                <Link href={`/organizadores/${event.profiles.username}`} className="flex items-center gap-4 group">
+                  <div className="h-14 w-14 rounded-2xl bg-primary-light flex items-center justify-center overflow-hidden border border-gray-100 shrink-0 relative transition-transform group-hover:scale-105">
+                    {event.profiles.avatar_url ? (
+                      <Image src={event.profiles.avatar_url} alt={event.profiles.name} fill className="object-cover" />
+                    ) : (
+                      <span className="text-primary font-bold text-xl">{event.profiles.name.substring(0, 2).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg flex items-center gap-1.5 group-hover:text-primary transition-colors">
+                      {event.profiles.name}
+                      {event.profiles.is_verified && <BadgeCheck className="w-4 h-4 text-primary" />}
+                    </h3>
+                    <p className="text-sm text-primary hover:underline mt-0.5">Ver perfil do organizador</p>
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-2xl bg-primary-light flex items-center justify-center overflow-hidden border border-gray-100 shrink-0">
+                    <span className="text-primary font-bold text-xl">{event.profiles?.name?.substring(0, 2).toUpperCase() || 'OG'}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg">{event.profiles?.name || 'Não informado'}</h3>
+                  </div>
+                </div>
+              )}
             </section>
           </div>
 
