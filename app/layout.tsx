@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header'
 import { Toaster } from '@/components/ui/sonner'
 import TestModeBanner from '@/components/layout/TestModeBanner'
 import { config } from '@/lib/config'
+import PWARegistration from '@/components/notifications/PWARegistration'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,6 +55,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
+        <PWARegistration />
         <Header />
         <TestModeBanner isTestMode={config.app.isTestMode} />
         <main>{children}</main>
