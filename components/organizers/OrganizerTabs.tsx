@@ -15,6 +15,20 @@ interface OrganizerTabsProps {
   organizer: OrganizerProfile
 }
 
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+)
+
+const FacebookIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+  </svg>
+)
+
 export function OrganizerTabs({
   organizerId,
   upcomingEvents,
@@ -177,7 +191,7 @@ export function OrganizerTabs({
                     {organizer.instagram && (
                       <li>
                         <a href={`https://instagram.com/${organizer.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-600 text-sm hover:text-primary transition-colors">
-                          <ExternalLink className="w-4 h-4 text-gray-400" />
+                          <InstagramIcon className="w-4 h-4 text-gray-400" />
                           <span>{organizer.instagram.startsWith('@') ? organizer.instagram : `@${organizer.instagram}`}</span>
                         </a>
                       </li>
@@ -185,8 +199,8 @@ export function OrganizerTabs({
                     {organizer.facebook && (
                       <li>
                         <a href={organizer.facebook.startsWith('http') ? organizer.facebook : `https://facebook.com/${organizer.facebook}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-gray-600 text-sm hover:text-primary transition-colors">
-                          <ExternalLink className="w-4 h-4 text-gray-400" />
-                          <span>Facebook</span>
+                          <FacebookIcon className="w-4 h-4 text-gray-400" />
+                          <span className="truncate max-w-[200px]">{organizer.facebook.replace(/^https?:\/\/(www\.)?facebook\.com\//, '').replace(/\/$/, '')}</span>
                         </a>
                       </li>
                     )}

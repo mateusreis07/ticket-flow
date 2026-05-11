@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Settings, User, Mail, Bell } from 'lucide-react'
+import { Settings, User, Mail, Bell, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 import PushManager from '@/components/notifications/PushManager'
 
 export default async function ConfiguracoesPage() {
@@ -46,6 +47,18 @@ export default async function ConfiguracoesPage() {
             </span>
           </div>
         </div>
+
+        {profile?.role === 'organizer' && (
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <Link 
+              href="/dashboard/perfil" 
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-hover transition-colors"
+            >
+              Configurar Perfil Público
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Seção Notificações */}

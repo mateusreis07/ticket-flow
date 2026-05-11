@@ -193,7 +193,7 @@ export function ProfileForm({ organizer, userId }: { organizer: OrganizerProfile
                 }
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Apenas letras minúsculas, números e hífens.</p>
+            <p className="text-xs text-gray-500 mt-1">Apenas minúsculas, números, pontos, hífens e underlines.</p>
           </div>
 
           <div>

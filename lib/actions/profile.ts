@@ -9,7 +9,7 @@ const profileSchema = z.object({
   username: z.string()
     .min(3, 'Mínimo 3 caracteres')
     .max(30, 'Máximo 30 caracteres')
-    .regex(/^[a-z0-9-]+$/, 'Apenas letras minúsculas, números e hífens')
+    .regex(/^[a-z0-9_.-]+$/, 'Apenas letras minúsculas, números, pontos, hífens e underlines')
     .optional()
     .or(z.literal('')),
   bio: z.string().max(300, 'Máximo 300 caracteres').optional().or(z.literal('')),
@@ -32,22 +32,24 @@ export async function updateOrganizerProfile(formData: FormData) {
   }
 
   const rawData = {
-    name: formData.get('name') as string,
-    username: formData.get('username') as string,
-    bio: formData.get('bio') as string,
-    website: formData.get('website') as string,
-    instagram: formData.get('instagram') as string,
-    facebook: formData.get('facebook') as string,
-    whatsapp: formData.get('whatsapp') as string,
-    city: formData.get('city') as string,
-    state: formData.get('state') as string,
+    name: (formData.get('name') as string) || '',
+    username: (formData.get('username') as string) || '',
+    bio: (formData.get('bio') as string) || '',
+    website: (formData.get('website') as string) || '',
+    instagram: (formData.get('instagram') as string) || '',
+    facebook: (formData.get('facebook') as string) || '',
+    whatsapp: (formData.get('whatsapp') as string) || '',
+    city: (formData.get('city') as string) || '',
+    state: (formData.get('state') as string) || '',
     avatar_url: formData.get('avatar_url') as string | undefined,
     cover_url: formData.get('cover_url') as string | undefined,
   }
 
   const result = profileSchema.safeParse(rawData)
   if (!result.success) {
-    return { error: 'Dados inválidos', details: result.error.flatten() }
+    console.error('Zod Validation Error:', result.error.flatten())
+    const firstError = Object.values(result.error.flatten().fieldErrors)[0]?.[0] || 'Dados inválidos'
+    return { error: `Erro: ${firstError}` }
   }
 
   const data = result.data

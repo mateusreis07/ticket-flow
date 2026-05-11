@@ -36,7 +36,7 @@ export default function DashboardLayout({ children, profile }: DashboardLayoutPr
     { name: 'Meus eventos', href: '/dashboard/eventos', icon: List, disabled: false },
     { name: 'Validar entradas', href: '/dashboard/scanner', icon: ScanLine, disabled: false, isScanner: true },
     { name: 'Relatórios', href: '/dashboard/relatorios', icon: BarChart3, disabled: true },
-    { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, disabled: true },
+    { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, disabled: false },
   ]
 
   return (

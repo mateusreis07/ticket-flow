@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getOrganizerById } from '@/lib/queries/organizers'
 import { ExternalLink, Camera, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
-import DashboardLayout from '@/components/layout/DashboardLayout'
+
 import { ProfileForm } from './ProfileForm' // We will extract the form to a client component
 
 export const metadata = {
@@ -31,16 +31,14 @@ export default async function DashboardProfilePage() {
   if (!organizer) {
     // Fallback if view doesn't return data yet
     return (
-      <DashboardLayout profile={{ ...profile, email: user.email }}>
-        <div className="p-8">
-          <p>Erro ao carregar perfil do organizador.</p>
-        </div>
-      </DashboardLayout>
+      <div className="p-8">
+        <p>Erro ao carregar perfil do organizador.</p>
+      </div>
     )
   }
 
   return (
-    <DashboardLayout profile={{ ...profile, email: user.email }}>
+    <>
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
@@ -62,6 +60,6 @@ export default async function DashboardProfilePage() {
         <ProfileForm organizer={organizer} userId={user.id} />
 
       </div>
-    </DashboardLayout>
+    </>
   )
 }

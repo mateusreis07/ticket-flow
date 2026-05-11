@@ -50,40 +50,18 @@ export default async function OrganizerProfilePage({ params }: { params: { usern
 
       {/* SEÇÃO DO PERFIL */}
       <div className="max-w-5xl mx-auto px-4">
-        <div className="relative -mt-16 md:-mt-20 mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          
-          {/* Esquerda — avatar + nome */}
-          <div className="flex items-end gap-4">
-            <div className="w-28 h-28 md:w-36 md:h-36 relative rounded-2xl border-4 border-white shadow-lg bg-primary-light flex items-center justify-center overflow-hidden shrink-0">
-              {organizer.avatar_url ? (
-                <Image src={organizer.avatar_url} alt={organizer.name} fill className="object-cover" priority />
-              ) : (
-                <span className="text-primary text-3xl md:text-5xl font-bold">{organizer.name.charAt(0).toUpperCase()}</span>
-              )}
-            </div>
-
-            <div className="pb-2">
-              <h1 className="font-bold text-gray-900 text-2xl flex items-center gap-1.5">
-                {organizer.name}
-                {organizer.is_verified && (
-                  <span title="Organizador verificado" className="inline-flex items-center justify-center">
-                    <BadgeCheck className="text-primary w-5 h-5" />
-                  </span>
-                )}
-              </h1>
-              <p className="text-gray-500 text-sm">@{organizer.username}</p>
-              
-              {(organizer.city || organizer.state) && (
-                <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1">
-                  <MapPin className="text-gray-400 w-3.5 h-3.5" />
-                  {[organizer.city, organizer.state].filter(Boolean).join(', ')}
-                </p>
-              )}
-            </div>
+        
+        {/* Linha 1: Avatar (sobrepondo a capa) + Botões de ação */}
+        <div className="relative flex justify-between items-end mb-3">
+          <div className="-mt-12 md:-mt-16 w-28 h-28 md:w-32 md:h-32 relative rounded-2xl border-4 border-white shadow-md bg-primary-light flex items-center justify-center overflow-hidden shrink-0 z-10">
+            {organizer.avatar_url ? (
+              <Image src={organizer.avatar_url} alt={organizer.name} fill className="object-cover" priority />
+            ) : (
+              <span className="text-primary text-3xl md:text-5xl font-bold">{organizer.name.charAt(0).toUpperCase()}</span>
+            )}
           </div>
 
-          {/* Direita — botões de ação */}
-          <div className="flex items-center gap-3 pb-2 md:ml-auto">
+          <div className="flex items-center gap-3 relative z-10 pb-2">
             {!isOwnProfile ? (
               <FollowButton 
                 organizerId={organizer.id} 
@@ -94,13 +72,33 @@ export default async function OrganizerProfilePage({ params }: { params: { usern
             ) : (
               <Link 
                 href="/dashboard/perfil"
-                className="border border-gray-200 bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                className="border border-gray-200 bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2 shadow-sm"
               >
                 <Settings className="w-4 h-4" />
                 Editar perfil
               </Link>
             )}
           </div>
+        </div>
+
+        {/* Linha 2: Informações de Texto (garantido em fundo claro) */}
+        <div className="mb-8">
+          <h1 className="font-bold text-gray-900 text-2xl md:text-3xl flex items-center gap-2">
+            {organizer.name}
+            {organizer.is_verified && (
+              <span title="Organizador verificado" className="inline-flex items-center justify-center">
+                <BadgeCheck className="text-primary w-6 h-6" />
+              </span>
+            )}
+          </h1>
+          <p className="text-gray-500 font-medium mt-0.5">@{organizer.username}</p>
+          
+          {(organizer.city || organizer.state) && (
+            <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-2">
+              <MapPin className="text-gray-400 w-4 h-4" />
+              {[organizer.city, organizer.state].filter(Boolean).join(', ')}
+            </p>
+          )}
         </div>
 
         {/* STATS */}
