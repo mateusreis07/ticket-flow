@@ -73,7 +73,7 @@ export async function createCoupon(
 
     const parsed = couponSchema.safeParse(raw)
     if (!parsed.success) {
-      const firstError = parsed.error.errors[0]?.message ?? 'Dados inválidos'
+      const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos'
       return { success: false, error: firstError }
     }
 
@@ -135,7 +135,7 @@ export async function updateCoupon(
 
     const parsed = couponSchema.safeParse(raw)
     if (!parsed.success) {
-      const firstError = parsed.error.errors[0]?.message ?? 'Dados inválidos'
+      const firstError = parsed.error.issues[0]?.message ?? 'Dados inválidos'
       return { success: false, error: firstError }
     }
 
