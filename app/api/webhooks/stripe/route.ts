@@ -179,13 +179,19 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
   // Idempotência: verificar se o pedido ainda está pendente
   const { data: order } = await supabaseAdmin
     .from('orders')
-    .select('id, status')
+    .select('id, status, coupon_id')
     .eq('id', orderId)
     .single()
 
   if (!order || order.status !== 'pending') {
     console.log(`Pedido ${orderId} não está mais pendente — ignorando`)
     return
+  }
+
+  // Se tinha cupom aplicado, reverter o used_count
+  if (order.coupon_id) {
+    const { removeCouponFromOrder } = await import('@/lib/coupons')
+    await removeCouponFromOrder(orderId)
   }
 
   // Buscar itens para devolver ingressos ao estoque
@@ -219,3 +225,4 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
 
   console.log(`🕐 Pedido ${orderId} expirado e cancelado pelo Stripe`)
 }
+

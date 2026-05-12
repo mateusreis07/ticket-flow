@@ -199,3 +199,56 @@ export type Follow = {
   following_id: string
   created_at: string
 }
+
+// ─── Coupon Types ─────────────────────────────────────────────────────────────
+
+export type DiscountType = 'percentage' | 'fixed'
+
+export type CouponAppliesTo =
+  'all' | 'specific_event' | 'specific_ticket_type'
+
+export type Coupon = {
+  id: string
+  organizer_id: string
+  event_id: string | null
+  code: string
+  description: string | null
+  discount_type: DiscountType
+  discount_value: number
+  min_order_amount: number
+  max_discount_amount: number | null
+  max_uses: number | null
+  max_uses_per_user: number
+  used_count: number
+  is_active: boolean
+  valid_from: string
+  valid_until: string | null
+  applies_to: CouponAppliesTo
+  ticket_type_ids: string[] | null
+  created_at: string
+  updated_at: string
+}
+
+export type CouponUse = {
+  id: string
+  coupon_id: string
+  order_id: string
+  user_id: string
+  discount_applied: number
+  used_at: string
+}
+
+export type CouponValidationResult = {
+  valid: boolean
+  coupon?: Coupon
+  discount_amount?: number
+  new_total?: number
+  error?: string
+}
+
+export type AppliedCoupon = {
+  code: string
+  discount_amount: number
+  new_total: number
+}
+

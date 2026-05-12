@@ -79,11 +79,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Itens do pedido não encontrados' }, { status: 404 })
     }
 
-    // 5. Montar os line_items para o Stripe
+    // 5. Montar os line_items para o Stripe (sempre pelo preço unitário original)
     const lineItems = items.map((item: any) => {
       const ticketName = item.ticket_types?.name || 'Ingresso'
       const eventTitle = event?.title || 'Evento'
-      const eventDate = event?.event_date ? formatDate(event.event_date, "dd 'de' MMMM 'de' yyyy") : ''
+      const eventDate = event?.event_date
+        ? formatDate(event.event_date, "dd 'de' MMMM 'de' yyyy")
+        : ''
       const eventLocation = event ? `${event.location}, ${event.city}` : ''
 
       return {
@@ -100,11 +102,25 @@ export async function POST(req: Request) {
       }
     })
 
-    // 6. Criar a Stripe Checkout Session
+    // 6. Criar Stripe Coupon se houver desconto aplicado no pedido
+    const discounts: { coupon: string }[] = []
+
+    if (order.coupon_code && order.discount_amount && order.discount_amount > 0) {
+      const stripeCoupon = await stripe.coupons.create({
+        amount_off: formatAmountForStripe(order.discount_amount),
+        currency: 'brl',
+        duration: 'once',
+        name: `Cupom ${order.coupon_code}`,
+      })
+      discounts.push({ coupon: stripeCoupon.id })
+    }
+
+    // 7. Criar a Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: lineItems,
+      ...(discounts.length > 0 ? { discounts } : {}),
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/sucesso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/cancelado?order=${orderId}`,
       customer_email: user.email,
@@ -121,13 +137,12 @@ export async function POST(req: Request) {
       },
     })
 
-    // 7. Salvar o stripe_session_id no pedido
+    // 8. Salvar o stripe_session_id no pedido
     await supabaseAdmin
       .from('orders')
       .update({ stripe_session_id: session.id })
       .eq('id', orderId)
 
-    // 8. Retornar a URL de redirect para o Stripe Checkout
     return NextResponse.json({ url: session.url })
 
   } catch (error: any) {

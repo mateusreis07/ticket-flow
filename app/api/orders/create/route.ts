@@ -64,6 +64,8 @@ export async function POST(req: Request) {
         event_id: eventId,
         status: 'pending',
         total_amount: totalAmount,
+        subtotal_amount: totalAmount,   // registrar o subtotal original
+        discount_amount: 0,
         expires_at: new Date(Date.now() + 30 * 60000).toISOString() // 30 mins
       })
       .select('id')
