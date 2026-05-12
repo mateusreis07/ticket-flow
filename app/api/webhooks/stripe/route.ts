@@ -65,7 +65,7 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // Idempotência: verificar se o pedido já foi processado
+  // 1. Idempotência Avançada: verificar se o pedido já foi processado
   const { data: order, error: fetchError } = await supabaseAdmin
     .from('orders')
     .select('id, status')
@@ -76,23 +76,39 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     throw new Error(`Pedido ${orderId} não encontrado no banco`)
   }
 
+  // Se já estiver pago, vamos verificar se os ingressos já existem
   if (order.status === 'paid') {
-    console.log(`Pedido ${orderId} já estava pago — ignorando evento duplicado`)
-    return
+    const { count } = await supabaseAdmin
+      .from('tickets')
+      .select('*', { count: 'exact', head: true })
+      .eq('order_id', orderId)
+
+    if (count && count > 0) {
+      console.log(`[Webhook] Pedido ${orderId} já processado com ingressos — ignorando`)
+      return
+    }
+    console.log(`[Webhook] Pedido ${orderId} está 'paid' mas não tem ingressos. Gerando agora...`)
+  } else {
+    // 2. Atualizar o status do pedido para 'paid' de forma atômica
+    const { data: updatedOrder, error: updateError } = await supabaseAdmin
+      .from('orders')
+      .update({
+        status: 'paid',
+        stripe_payment_intent_id: session.payment_intent as string ?? null,
+      })
+      .eq('id', orderId)
+      .eq('status', 'pending')
+      .select()
+      .single()
+
+    if (updateError || !updatedOrder) {
+      // Se falhou o update, pode ser que outra requisição acabou de atualizar. 
+      // Vamos deixar a próxima execução (ou o retry do Stripe) cuidar disso.
+      throw new Error(`Erro ao atualizar status do pedido ${orderId} para 'paid'`)
+    }
   }
 
-  // 1. Atualizar o status do pedido para 'paid'
-  const { error: updateError } = await supabaseAdmin
-    .from('orders')
-    .update({
-      status: 'paid',
-      stripe_payment_intent_id: session.payment_intent as string ?? null,
-    })
-    .eq('id', orderId)
-
-  if (updateError) throw updateError
-
-  // 2. Buscar os itens do pedido com o event_id vindo do JOIN com ticket_types
+  // 3. Buscar os itens do pedido
   const { data: items, error: itemsError } = await supabaseAdmin
     .from('order_items')
     .select(`
@@ -105,7 +121,7 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
     throw new Error(`Itens do pedido ${orderId} não encontrados`)
   }
 
-  // 3. Gerar um ticket por unidade comprada
+  // 4. Gerar um ticket por unidade comprada
   const ticketsToInsert: any[] = []
 
   for (const item of items) {
@@ -130,7 +146,7 @@ async function handleSessionCompleted(session: Stripe.Checkout.Session) {
   if (ticketsError) throw ticketsError
 
   console.log(
-    `✅ Pedido ${orderId} confirmado | ${ticketsToInsert.length} ingresso(s) gerado(s)`
+    `✅ Pedido ${orderId} processado | ${ticketsToInsert.length} ingresso(s) gerado(s)`
   )
 
   // 4. Enviar e-mails de confirmação e ingressos
