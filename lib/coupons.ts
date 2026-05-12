@@ -191,13 +191,15 @@ export async function applyCouponToOrder(
 
     if (insertUseError) throw insertUseError
 
-    // 5. Incrementar contador de usos
-    const { error: incrementError } = await supabaseAdmin
-      .from('coupons')
-      .update({ used_count: coupon.used_count + 1 })
-      .eq('id', couponId)
+    // 5. Incrementar contador de usos de forma atômica
+    const { data: success, error: rpcError } = await supabaseAdmin.rpc('increment_coupon_usage', {
+      c_id: couponId,
+      max_u: coupon.max_uses
+    })
 
-    if (incrementError) throw incrementError
+    if (rpcError || !success) {
+      return { success: false, error: 'Este cupom atingiu o limite de usos no momento do processamento.' }
+    }
 
     return { success: true }
   } catch (err: any) {

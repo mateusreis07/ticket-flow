@@ -85,13 +85,19 @@ export async function POST(req: Request) {
 
     if (itemsError) throw itemsError
 
-    // 4. Update quantities
+    // 4. Update quantities with atomic protection
     for (const item of items) {
-      const { data: curr } = await supabase.from('ticket_types').select('quantity_sold').eq('id', item.ticketTypeId).single()
-      await supabase
-        .from('ticket_types')
-        .update({ quantity_sold: (curr?.quantity_sold || 0) + item.quantity })
-        .eq('id', item.ticketTypeId)
+      const { data: success, error: rpcError } = await supabase.rpc('increment_ticket_stock', {
+        t_id: item.ticketTypeId,
+        q: item.quantity
+      })
+
+      if (rpcError || !success) {
+        // Se falhou o estoque de UM item, precisamos cancelar o pedido inteiro (ou reverter os outros)
+        // Por simplicidade e segurança, marcamos o pedido como cancelado
+        await supabase.from('orders').update({ status: 'cancelled' }).eq('id', order.id)
+        return NextResponse.json({ error: 'Ingresso esgotado durante o processamento.' }, { status: 400 })
+      }
     }
 
     return NextResponse.json({ orderId: order.id }, { status: 201 })

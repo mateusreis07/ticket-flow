@@ -64,14 +64,16 @@ export async function POST(req: Request) {
 
     const event = Array.isArray(order.events) ? order.events[0] : order.events
 
-    // 4. Buscar itens do pedido com detalhes dos tickets
+    // 4. Buscar itens do pedido com detalhes dos tickets direto da fonte da verdade (ticket_types)
     const { data: items, error: itemsError } = await supabaseAdmin
       .from('order_items')
       .select(`
         quantity,
-        unit_price,
         ticket_type_id,
-        ticket_types ( name )
+        ticket_types ( 
+          name,
+          price
+        )
       `)
       .eq('order_id', orderId)
 
@@ -79,9 +81,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Itens do pedido não encontrados' }, { status: 404 })
     }
 
-    // 5. Montar os line_items para o Stripe (sempre pelo preço unitário original)
+    // 5. Montar os line_items para o Stripe (SEMPRE pelo preço real do banco)
     const lineItems = items.map((item: any) => {
-      const ticketName = item.ticket_types?.name || 'Ingresso'
+      const ticketType = item.ticket_types as any
+      const ticketName = ticketType?.name || 'Ingresso'
+      const realPrice = ticketType?.price || 0
+      
       const eventTitle = event?.title || 'Evento'
       const eventDate = event?.event_date
         ? formatDate(event.event_date, "dd 'de' MMMM 'de' yyyy")
@@ -91,7 +96,7 @@ export async function POST(req: Request) {
       return {
         price_data: {
           currency: 'brl',
-          unit_amount: formatAmountForStripe(item.unit_price),
+          unit_amount: formatAmountForStripe(realPrice),
           product_data: {
             name: `${ticketName} — ${eventTitle}`,
             description: `Evento: ${eventTitle} | ${eventDate} | ${eventLocation}`,
