@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase/admin'
-import DashboardLayout from '@/components/layout/DashboardLayout'
 import CouponsClient from '@/components/dashboard/CouponsClient'
 import { formatCurrency } from '@/lib/utils/format'
 
@@ -59,42 +58,41 @@ export default async function CouponsPage() {
   }, 0)
 
   return (
-    <DashboardLayout profile={profile}>
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Cupons de desconto</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Crie e gerencie cupons para seus eventos</p>
-          </div>
+    <div className="max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Cupons de desconto</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Crie e gerencie cupons para seus eventos</p>
         </div>
-
-        {/* Métricas */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Cupons ativos</p>
-            <p className="text-3xl font-bold text-gray-900">{totalActive}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Usos hoje</p>
-            <p className="text-3xl font-bold text-gray-900">{todayUses}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total em descontos</p>
-            <p className="text-3xl font-bold text-primary">{formatCurrency(totalDiscountGranted)}</p>
-          </div>
-        </div>
-
-        {/* Tabela + ações — componente client */}
-        <CouponsClient
-          coupons={(coupons ?? []).map((c: any) => ({
-            ...c,
-            event_title: c.events?.title ?? null,
-            total_uses: (c.coupon_uses ?? []).length,
-          }))}
-          events={events ?? []}
-        />
       </div>
-    </DashboardLayout>
+
+      {/* Métricas */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Cupons ativos</p>
+          <p className="text-3xl font-bold text-gray-900">{totalActive}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Usos hoje</p>
+          <p className="text-3xl font-bold text-gray-900">{todayUses}</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Total em descontos</p>
+          <p className="text-3xl font-bold text-primary">{formatCurrency(totalDiscountGranted)}</p>
+        </div>
+      </div>
+
+      {/* Tabela + ações — componente client */}
+      <CouponsClient
+        coupons={(coupons ?? []).map((c: any) => ({
+          ...c,
+          event_title: c.events?.title ?? null,
+          total_uses: (c.coupon_uses ?? []).length,
+        }))}
+        events={events ?? []}
+      />
+    </div>
   )
 }
+

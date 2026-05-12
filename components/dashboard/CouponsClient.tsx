@@ -55,15 +55,16 @@ function RowMenu({
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0 })
 
   const handleToggle = async () => {
     setLoading(true)
     setOpen(false)
     const res = await toggleCoupon(coupon.id, !coupon.is_active)
-    if (res.success) {
+    if (res?.success) {
       toast.success(coupon.is_active ? 'Cupom desativado.' : 'Cupom ativado.')
     } else {
-      toast.error(res.error)
+      toast.error(res?.error || 'Erro ao atualizar cupom.')
     }
     setLoading(false)
   }
@@ -73,18 +74,29 @@ function RowMenu({
     setLoading(true)
     setOpen(false)
     const res = await deleteCoupon(coupon.id)
-    if (res.success) {
+    if (res?.success) {
       toast.success('Cupom excluído.')
     } else {
-      toast.error(res.error)
+      toast.error(res?.error || 'Erro ao excluir cupom.')
     }
     setLoading(false)
   }
 
   return (
-    <div className="relative">
+    <div className="flex justify-end">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
+          const menuHeight = 180 // Altura aproximada do menu com 4 itens
+          const spaceBelow = window.innerHeight - rect.bottom
+          const shouldOpenUp = spaceBelow < menuHeight
+
+          setCoords({
+            top: shouldOpenUp ? rect.top - menuHeight - 4 : rect.bottom + 4,
+            left: rect.right - 176, // w-44 = 176px
+          })
+          setOpen(!open)
+        }}
         disabled={loading}
         className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700"
       >
@@ -93,11 +105,17 @@ function RowMenu({
 
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 w-44">
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div 
+            className="fixed z-[110] bg-white border border-gray-200 rounded-xl shadow-xl py-1 w-44 overflow-hidden animate-in fade-in zoom-in duration-200"
+            style={{ 
+              top: `${coords.top}px`, 
+              left: `${coords.left}px` 
+            }}
+          >
             <Link
               href={`/dashboard/cupons/${coupon.id}/usos`}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               onClick={() => setOpen(false)}
             >
               <Eye className="w-4 h-4 text-gray-400" />
@@ -105,7 +123,7 @@ function RowMenu({
             </Link>
             <button
               onClick={() => { setOpen(false); onEdit(coupon) }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full text-left transition-colors"
             >
               <Pencil className="w-4 h-4 text-gray-400" />
               Editar
@@ -113,14 +131,14 @@ function RowMenu({
             <div className="border-t border-gray-100 my-1" />
             <button
               onClick={handleToggle}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full text-left transition-colors"
             >
               <Power className="w-4 h-4 text-gray-400" />
               {coupon.is_active ? 'Desativar' : 'Ativar'}
             </button>
             <button
               onClick={handleDelete}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left transition-colors"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
@@ -178,7 +196,7 @@ export default function CouponsClient({ coupons, events }: CouponsClientProps) {
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

@@ -161,22 +161,34 @@ export async function toggleCoupon(
   couponId: string,
   isActive: boolean
 ): Promise<{ success: boolean; error?: string }> {
+  console.log('toggleCoupon called:', { couponId, isActive })
   try {
     const organizerId = await getOrganizerIdOrThrow()
+    console.log('organizerId found:', organizerId)
 
     const { error } = await supabaseAdmin
       .from('coupons')
-      .update({ is_active: isActive, updated_at: new Date().toISOString() })
+      .update({ 
+        is_active: isActive, 
+        updated_at: new Date().toISOString() 
+      })
       .eq('id', couponId)
       .eq('organizer_id', organizerId)
 
-    if (error) throw error
+    if (error) {
+      console.error('Supabase error in toggleCoupon:', error)
+      throw error
+    }
 
+    console.log('Coupon updated successfully')
     revalidatePath('/dashboard/cupons')
     return { success: true }
   } catch (err: any) {
-    console.error('toggleCoupon error:', err)
-    return { success: false, error: err.message ?? 'Erro ao atualizar cupom.' }
+    console.error('toggleCoupon caught error:', err)
+    return { 
+      success: false, 
+      error: err.message || 'Erro ao atualizar status do cupom.' 
+    }
   }
 }
 

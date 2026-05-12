@@ -209,13 +209,18 @@ export async function applyCouponToOrder(
 // ─── removeCouponFromOrder ────────────────────────────────────────────────────
 
 export async function removeCouponFromOrder(orderId: string): Promise<void> {
+  console.log(`[removeCouponFromOrder] Iniciando remoção para pedido ${orderId}`)
+  
   const { data: order } = await supabaseAdmin
     .from('orders')
     .select('id, coupon_id, subtotal_amount, total_amount')
     .eq('id', orderId)
     .single()
 
-  if (!order?.coupon_id) return
+  if (!order?.coupon_id) {
+    console.log(`[removeCouponFromOrder] Pedido ${orderId} não possui coupon_id vinculado.`)
+    return
+  }
 
   const subtotal = order.subtotal_amount ?? order.total_amount
 
@@ -227,20 +232,27 @@ export async function removeCouponFromOrder(orderId: string): Promise<void> {
     .single()
 
   if (coupon) {
-    await supabaseAdmin
+    const newUsedCount = Math.max(0, coupon.used_count - 1)
+    console.log(`[removeCouponFromOrder] Decrementando used_count do cupom ${order.coupon_id}: ${coupon.used_count} -> ${newUsedCount}`)
+    
+    const { error: updateError } = await supabaseAdmin
       .from('coupons')
-      .update({ used_count: Math.max(0, coupon.used_count - 1) })
+      .update({ used_count: newUsedCount })
       .eq('id', order.coupon_id)
+      
+    if (updateError) console.error(`[removeCouponFromOrder] Erro ao atualizar used_count:`, updateError)
   }
 
   // Remover registro de uso
-  await supabaseAdmin
+  const { error: deleteError } = await supabaseAdmin
     .from('coupon_uses')
     .delete()
     .eq('order_id', orderId)
+    
+  if (deleteError) console.error(`[removeCouponFromOrder] Erro ao deletar coupon_uses:`, deleteError)
 
   // Restaurar total original do pedido
-  await supabaseAdmin
+  const { error: updateOrderError } = await supabaseAdmin
     .from('orders')
     .update({
       coupon_id: null,
@@ -249,4 +261,8 @@ export async function removeCouponFromOrder(orderId: string): Promise<void> {
       total_amount: subtotal,
     })
     .eq('id', orderId)
+    
+  if (updateOrderError) console.error(`[removeCouponFromOrder] Erro ao limpar cupom do pedido:`, updateOrderError)
+  
+  console.log(`[removeCouponFromOrder] Finalizado com sucesso para pedido ${orderId}`)
 }
