@@ -56,7 +56,7 @@ export async function GET(req: Request) {
 
     // Manually join profiles because of admin rights and foreign keys
     // Optimization: get unique buyer_ids
-    const buyerIds = [...new Set(tickets.map(t => t.buyer_id).filter(Boolean))]
+    const buyerIds = Array.from(new Set(tickets.map(t => t.buyer_id).filter(Boolean)))
     let profilesMap: Record<string, any> = {}
     
     if (buyerIds.length > 0) {
