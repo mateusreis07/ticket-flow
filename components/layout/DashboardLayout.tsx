@@ -36,7 +36,7 @@ export default function DashboardLayout({ children, profile }: DashboardLayoutPr
     { name: 'Criar evento', href: '/dashboard/eventos/criar', icon: CalendarPlus, disabled: false },
     { name: 'Meus eventos', href: '/dashboard/eventos', icon: List, disabled: false },
     { name: 'Cupons', href: '/dashboard/cupons', icon: Tag, disabled: false },
-    { name: 'Validar entradas', href: '/dashboard/scanner', icon: ScanLine, disabled: false, isScanner: true },
+    { name: 'Check-in (App)', href: '/dashboard/checkin', icon: ScanLine, disabled: false, isScanner: true },
     { name: 'Relatórios', href: '/dashboard/relatorios', icon: BarChart3, disabled: true },
     { name: 'Configurações', href: '/dashboard/configuracoes', icon: Settings, disabled: false },
   ]

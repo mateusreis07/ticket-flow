@@ -252,3 +252,57 @@ export type AppliedCoupon = {
   new_total: number
 }
 
+// ─── Check-in System Types ───────────────────────────────────────────────────
+
+export type CheckinResult =
+  'success' | 'already_used' | 'not_found' |
+  'wrong_event' | 'manual_override'
+
+export type CheckinSession = {
+  id: string
+  event_id: string
+  organizer_id: string
+  device_info: string | null
+  started_at: string
+  ended_at: string | null
+  total_checkins: number
+  is_active: boolean
+}
+
+export type CheckinLog = {
+  id: string
+  session_id: string
+  ticket_id: string | null
+  qr_code: string | null
+  buyer_name: string | null
+  ticket_type_name: string | null
+  result: CheckinResult
+  checked_in_at: string
+  synced_at: string | null
+  is_synced: boolean
+  operator_note: string | null
+}
+
+export type CheckinListItem = {
+  ticket_id: string
+  qr_code: string
+  buyer_name: string
+  buyer_email: string
+  ticket_type_name: string
+  ticket_type_id: string
+  order_id: string
+  is_used: boolean
+  used_at: string | null
+  checkin_method: string | null
+}
+
+export type OfflineCheckinAction = {
+  localId: string
+  ticketId: string
+  qrCode: string
+  buyerName: string
+  ticketTypeName: string
+  result: CheckinResult
+  timestamp: string
+  synced: boolean
+}

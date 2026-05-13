@@ -61,3 +61,37 @@ export async function sendNewEventPush(
     tag: `new-event-${eventId}`,
   })
 }
+
+export async function sendCheckinMilestonePush(
+  organizerId: string,
+  eventTitle: string,
+  checkedIn: number,
+  total: number,
+  eventId: string
+) {
+  if (total === 0) return
+
+  const percentage = Math.round((checkedIn / total) * 100)
+  
+  // Enviar push apenas em marcos de 25%, 50%, 75%, 90% e 100%
+  const milestones = [25, 50, 75, 90, 100]
+  
+  // Calcular se o último check-in atingiu exatamente o marco
+  // Isso requer que checkedIn / total seja calculado precisamente
+  const hitMilestone = milestones.find(m => {
+    // Tolerância para bater o marco, ou logar no banco quando disparou
+    const threshold = Math.ceil((m / 100) * total)
+    return checkedIn === threshold
+  })
+
+  if (hitMilestone) {
+    return sendPushToUser(organizerId, {
+      title: '📊 Marco de Check-in!',
+      body: `"${eventTitle}" atingiu ${hitMilestone}% de presença! (${checkedIn}/${total})`,
+      url: `/dashboard/checkin/${eventId}`,
+      type: 'checkin_milestone',
+      tag: `milestone-${eventId}-${hitMilestone}`,
+      requireInteraction: false,
+    })
+  }
+}
