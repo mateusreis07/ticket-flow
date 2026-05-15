@@ -109,6 +109,88 @@ CREATE POLICY "organizer_update_session_logs"
       AND cs.organizer_id = auth.uid()
   ));
 
+
+-- Função para processar check-ins em lote de forma atômica
+CREATE OR REPLACE FUNCTION public.process_bulk_checkins(
+  p_session_id UUID,
+  p_organizer_id UUID,
+  checkin_data JSONB
+)
+RETURNS JSONB AS $$
+DECLARE
+  item RECORD;
+  success_count INT := 0;
+  error_count INT := 0;
+BEGIN
+  -- checkin_data: [{ticketId, qrCode, buyerName, ticketTypeName, result, timestamp}, ...]
+  FOR item IN SELECT * FROM jsonb_to_recordset(checkin_data) 
+    AS x(ticketId UUID, qrCode TEXT, buyerName TEXT, ticketTypeName TEXT, result TEXT, timestamp TIMESTAMPTZ)
+  LOOP
+    BEGIN
+      -- 1. Registrar log da ação offline (sempre registramos para auditoria)
+      INSERT INTO public.checkin_logs (
+        session_id, 
+        ticket_id, 
+        qr_code, 
+        buyer_name, 
+        ticket_type_name, 
+        result, 
+        checked_in_at, 
+        is_synced, 
+        synced_at
+      )
+      VALUES (
+        p_session_id, 
+        item.ticketId, 
+        item.qrCode, 
+        item.buyerName, 
+        item.ticketTypeName, 
+        item.result, 
+        item.timestamp, 
+        true, 
+        now()
+      );
+
+      -- 2. Aplicar a alteração no ticket se foi sucesso/manual
+      IF item.result IN ('success', 'manual_override') AND item.ticketId IS NOT NULL THEN
+        UPDATE public.tickets
+        SET 
+          is_used = true,
+          used_at = item.timestamp,
+          checked_in_by = p_organizer_id,
+          checkin_session_id = p_session_id,
+          checkin_method = 'offline_sync'
+        WHERE id = item.ticketId AND is_used = false;
+
+        IF FOUND THEN
+          success_count := success_count + 1;
+        ELSE
+          -- Se não deu FOUND, o ingresso já foi usado em outro lugar/sincronização
+          error_count := error_count + 1;
+        END IF;
+      ELSE
+        -- Se era erro ou não tinha ID, incrementamos o contador de "erros/não processados"
+        IF item.result != 'success' THEN
+           error_count := error_count + 1;
+        END IF;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      error_count := error_count + 1;
+    END;
+  END LOOP;
+
+  -- 3. Atualizar o contador da sessão uma única vez no final
+  UPDATE public.checkin_sessions
+  SET total_checkins = total_checkins + success_count
+  WHERE id = p_session_id;
+
+  RETURN jsonb_build_object(
+    'success_count', success_count,
+    'error_count', error_count
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- PARTE 6 - View de Overview
 CREATE OR REPLACE VIEW public.checkin_overview AS
 SELECT
