@@ -35,8 +35,13 @@ export function TicketListItem({ ticket, isPast }: TicketListItemProps) {
           )}
 
           <div>
-            <p className="font-medium text-gray-900 text-sm">
+            <p className="font-medium text-gray-900 text-sm flex items-center gap-2">
               {ticket.ticket_type_name}
+              {ticket.is_courtesy && (
+                <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1">
+                  🎁 CORTESIA
+                </span>
+              )}
             </p>
             
             {ticket.is_used ? (

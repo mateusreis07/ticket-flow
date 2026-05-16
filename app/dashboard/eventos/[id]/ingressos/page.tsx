@@ -99,6 +99,23 @@ export default async function ManageTicketsPage({ params }: { params: { id: stri
           </div>
         )}
       </div>
+
+      <div className="mt-12 bg-purple-50 rounded-2xl border border-purple-100 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h3 className="text-lg font-bold text-purple-900 flex items-center gap-2">
+            🎁 Precisa emitir ingressos gratuitos?
+          </h3>
+          <p className="text-purple-700 text-sm mt-1">
+            Use a Lista de Cortesia para gerenciar convidados, imprensa, staff e patrocinadores.
+          </p>
+        </div>
+        <Link 
+          href={`/dashboard/eventos/${params.id}/cortesia`}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shrink-0"
+        >
+          Gerenciar cortesia →
+        </Link>
+      </div>
     </div>
   )
 }

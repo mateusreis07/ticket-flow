@@ -43,8 +43,16 @@ export function TicketModal({ ticket, isOpen, onClose }: TicketModalProps) {
         {/* Corpo central */}
         <div className="p-6 flex flex-col items-center">
           
-          <div className="bg-primary-light text-primary font-semibold rounded-full px-5 py-2 text-base mb-6 text-center">
-            {ticket.ticket_type_name}
+          <div className="flex flex-col items-center mb-6">
+            <div className="bg-primary-light text-primary font-semibold rounded-full px-5 py-2 text-base text-center flex items-center gap-2">
+              {ticket.is_courtesy && <span className="text-lg">🎁</span>}
+              {ticket.ticket_type_name}
+            </div>
+            {ticket.is_courtesy && (
+              <span className="text-[10px] font-bold text-primary mt-1 tracking-widest">
+                CORTESIA
+              </span>
+            )}
           </div>
 
           <div className="relative">

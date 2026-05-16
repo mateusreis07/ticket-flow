@@ -1,6 +1,7 @@
 import { resend, EMAIL_CONFIG, EmailResult } from './resend'
 import { OrderConfirmationEmail } from '@/emails/OrderConfirmationEmail'
 import { TicketsEmail } from '@/emails/TicketsEmail'
+import { CourtesyTicketEmail } from '@/emails/CourtesyTicketEmail'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { formatDate } from '@/lib/utils/format'
 
@@ -126,6 +127,22 @@ export async function sendOrderAndTicketsEmails(orderId: string): Promise<EmailR
     return { success: true }
   } catch (error: any) {
     console.error('Erro geral no fluxo de e-mails:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function sendCourtesyEmail(params: any): Promise<EmailResult> {
+  try {
+    await resend.emails.send({
+      ...EMAIL_CONFIG,
+      to: [params.guestEmail],
+      subject: `🎟 Seu ingresso cortesia — ${params.eventTitle}`,
+      react: CourtesyTicketEmail({ ...params }),
+    })
+    console.log('E-mail de cortesia enviado para:', params.guestEmail)
+    return { success: true }
+  } catch (error: any) {
+    console.error('Erro ao enviar e-mail de cortesia:', error)
     return { success: false, error: error.message }
   }
 }

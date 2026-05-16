@@ -79,6 +79,7 @@ export type TicketWithDetails = {
   ticket_price: number
   buyer_name: string
   buyer_email: string
+  is_courtesy: boolean
 }
 
 export type OverviewMetrics = {
@@ -305,4 +306,69 @@ export type OfflineCheckinAction = {
   result: CheckinResult
   timestamp: string
   synced: boolean
+}
+
+// ─── Courtesy & VIP System Types ─────────────────────────────────────────────
+
+export type CourtesyListType =
+  | 'courtesy' | 'vip' | 'press'
+  | 'staff' | 'sponsor' | 'guest'
+
+export type CourtesyEntryStatus =
+  | 'pending' | 'sent' | 'confirmed'
+  | 'cancelled' | 'expired'
+
+export type CourtesyList = {
+  id: string
+  event_id: string
+  organizer_id: string
+  name: string
+  description: string | null
+  list_type: CourtesyListType
+  max_entries: number | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type CourtesyEntry = {
+  id: string
+  list_id: string
+  event_id: string
+  organizer_id: string
+  guest_name: string
+  guest_email: string
+  guest_phone: string | null
+  guest_document: string | null
+  ticket_type_id: string
+  quantity: number
+  note: string | null
+  status: CourtesyEntryStatus
+  sent_at: string | null
+  confirmed_at: string | null
+  expires_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export type CourtesyEntryWithDetails = CourtesyEntry & {
+  ticket_type_name: string
+  ticket_type_price: number
+  list_name: string
+  list_type: CourtesyListType
+  tickets?: { id: string, qr_code: string }[]
+}
+
+export type CourtesyStats = {
+  event_id: string
+  list_id: string
+  list_name: string
+  list_type: CourtesyListType
+  total_entries: number
+  total_tickets: number
+  sent_count: number
+  confirmed_count: number
+  pending_count: number
+  cancelled_count: number
 }

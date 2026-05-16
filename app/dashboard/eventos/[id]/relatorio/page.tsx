@@ -98,6 +98,29 @@ export default async function EventReportPage({ params }: { params: { id: string
         </div>
       </div>
 
+      {/* Acesso rápido para Cortesia e VIP */}
+      <div className="mt-6 bg-purple-50 rounded-2xl border border-purple-100 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="bg-purple-100 p-3 rounded-full shrink-0">
+            <span className="text-2xl">🎁</span>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-purple-900 flex items-center gap-2">
+              Cortesia e VIP
+            </h3>
+            <p className="text-purple-700 text-sm mt-1">
+              Gerencie ingressos gratuitos para convidados especiais, imprensa, staff e patrocinadores.
+            </p>
+          </div>
+        </div>
+        <Link 
+          href={`/dashboard/eventos/${event.id}/cortesia`}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shrink-0"
+        >
+          Gerenciar listas →
+        </Link>
+      </div>
+
       {/* Gráfico de Vendas */}
       <div className="mt-8">
         <SalesChart data={salesData} totalRevenue={salesData.reduce((acc: number, curr: any) => acc + curr.revenue, 0)} />
