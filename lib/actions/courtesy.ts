@@ -40,7 +40,7 @@ export async function createCourtesyList(eventId: string, formData: FormData) {
 
     const parsed = createListSchema.safeParse(data)
     if (!parsed.success) {
-      return { success: false, error: parsed.error.errors[0].message }
+      return { success: false, error: parsed.error.issues[0].message }
     }
 
     const maxEntries = parsed.data.max_entries === '' ? null : Number(parsed.data.max_entries)
@@ -84,7 +84,7 @@ export async function updateCourtesyList(listId: string, eventId: string, formDa
 
     const parsed = createListSchema.safeParse(data)
     if (!parsed.success) {
-      return { success: false, error: parsed.error.errors[0].message }
+      return { success: false, error: parsed.error.issues[0].message }
     }
 
     const maxEntries = parsed.data.max_entries === '' ? null : Number(parsed.data.max_entries)
@@ -198,7 +198,7 @@ export async function addCourtesyEntry(listId: string, eventId: string, formData
 
     const parsed = createEntrySchema.safeParse(data)
     if (!parsed.success) {
-      return { success: false, error: parsed.error.errors[0].message }
+      return { success: false, error: parsed.error.issues[0].message }
     }
 
     const { data: entry, error } = await supabase
@@ -265,7 +265,7 @@ export async function updateCourtesyEntry(entryId: string, eventId: string, form
       
           const parsed = createEntrySchema.safeParse(data)
           if (!parsed.success) {
-            return { success: false, error: parsed.error.errors[0].message }
+            return { success: false, error: parsed.error.issues[0].message }
           }
 
           const { error } = await supabase

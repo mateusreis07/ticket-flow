@@ -41,12 +41,13 @@ export function CourtesyEntryModal({ isOpen, onClose, listId, eventId, ticketTyp
         : await addCourtesyEntry(listId, eventId, formData)
 
       if (result.success) {
-        if (!entry && sendImmediately && result.entry) {
+        const createdEntry = (result as any).entry
+        if (!entry && sendImmediately && createdEntry) {
           // Disparar emissão
           toast.loading('Emitindo ingresso...', { id: 'issue' })
           const res = await fetch('/api/courtesy/issue', {
             method: 'POST',
-            body: JSON.stringify({ entryId: result.entry.id }),
+            body: JSON.stringify({ entryId: createdEntry.id }),
             headers: { 'Content-Type': 'application/json' }
           })
           const issueResult = await res.json()

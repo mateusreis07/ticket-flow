@@ -178,7 +178,7 @@ export async function issueCourtesyTickets(entryId: string): Promise<{ success: 
         guestEmail: entry.guest_email,
         organizerName: organizer?.name || 'Organizador',
         eventTitle: event.title,
-        eventDate: formatDate(event.event_date, { long: true }),
+        eventDate: formatDate(event.event_date, "dd 'de' MMMM 'de' yyyy"),
         eventTime: event.event_time,
         eventLocation: event.location,
         eventCity: event.city,
