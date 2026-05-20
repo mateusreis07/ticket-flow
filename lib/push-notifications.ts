@@ -15,6 +15,21 @@ export async function sendOrderConfirmedPush(
   })
 }
 
+export async function sendCourtesyTicketPush(
+  userId: string,
+  eventTitle: string,
+  orderId: string
+) {
+  return sendPushToUser(userId, {
+    title: '🎁 Novo ingresso cortesia!',
+    body: `Você recebeu um ingresso VIP/Cortesia para "${eventTitle}".`,
+    url: '/meus-ingressos',
+    type: 'courtesy_ticket',
+    tag: `courtesy-${orderId}`,
+    requireInteraction: true,
+  })
+}
+
 export async function sendEventReminderPush(
   userId: string,
   eventTitle: string,

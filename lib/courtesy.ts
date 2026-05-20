@@ -196,6 +196,16 @@ export async function issueCourtesyTickets(entryId: string): Promise<{ success: 
       console.error('Erro ao enviar e-mail de cortesia:', emailError)
     }
 
+    // Enviar Push Notification
+    try {
+      if (guestProfileId) {
+        const { sendCourtesyTicketPush } = await import('@/lib/push-notifications')
+        await sendCourtesyTicketPush(guestProfileId, event.title, order.id)
+      }
+    } catch (pushError) {
+      console.error('Erro ao enviar push de cortesia:', pushError)
+    }
+
     return { 
       success: true, 
       tickets: createdTickets, 
