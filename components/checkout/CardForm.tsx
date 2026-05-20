@@ -32,11 +32,13 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
 
   useEffect(() => {
     const initMP = () => {
+      const publicKey = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY
+      if (!publicKey) {
+        console.error('NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY não configurada')
+        return
+      }
       if (window.MercadoPago) {
-        mpRef.current = new window.MercadoPago(
-          process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY!,
-          { locale: 'pt-BR' }
-        )
+        mpRef.current = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
       }
     }
 
