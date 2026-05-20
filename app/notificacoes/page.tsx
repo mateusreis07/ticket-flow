@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Bell, CheckCircle2, Clock, XCircle, ArrowLeftRight, Sparkles, Tag } from 'lucide-react'
+import { Bell, CheckCircle2, Clock, XCircle, ArrowLeftRight, Sparkles, Tag, Gift } from 'lucide-react'
 import { MarkAllReadButton } from '@/components/notifications/MarkAllReadButton'
 
 interface PushNotification {
@@ -20,6 +20,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   ticket_transferred: <ArrowLeftRight className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />,
   new_event: <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />,
   promotional: <Tag className="h-5 w-5 text-purple-500 flex-shrink-0 mt-0.5" />,
+  courtesy_ticket: <Gift className="h-5 w-5 text-pink-500 flex-shrink-0 mt-0.5" />,
 }
 
 function groupByDate(notifications: PushNotification[]): Record<string, PushNotification[]> {

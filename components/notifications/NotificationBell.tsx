@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Bell, CheckCircle2, Clock, XCircle,
-  ArrowLeftRight, Sparkles, Tag,
+  ArrowLeftRight, Sparkles, Tag, Gift
 } from 'lucide-react'
 
 interface PushNotification {
@@ -30,6 +30,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   ticket_transferred: <ArrowLeftRight className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />,
   new_event: <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />,
   promotional: <Tag className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />,
+  courtesy_ticket: <Gift className="h-4 w-4 text-pink-500 flex-shrink-0 mt-0.5" />,
 }
 
 function timeAgo(dateStr: string): string {

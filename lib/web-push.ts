@@ -6,7 +6,7 @@ export type PushPayload = {
   body: string
   url?: string
   tag?: string
-  type: 'order_confirmed' | 'event_reminder' | 'event_cancelled' | 'ticket_transferred' | 'new_event' | 'promotional' | 'checkin_milestone'
+  type: 'order_confirmed' | 'event_reminder' | 'event_cancelled' | 'ticket_transferred' | 'new_event' | 'promotional' | 'checkin_milestone' | 'courtesy_ticket'
   actions?: Array<{ action: string; title: string }>
   requireInteraction?: boolean
 }
