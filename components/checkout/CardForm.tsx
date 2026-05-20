@@ -289,7 +289,9 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
               type="password"
               className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
             />
-            <HelpCircle className="w-4 h-4 text-gray-300 absolute right-3 top-3.5" title="3 ou 4 dígitos no verso do cartão" />
+            <span title="3 ou 4 dígitos no verso do cartão" className="absolute right-3 top-3.5">
+              <HelpCircle className="w-4 h-4 text-gray-300" />
+            </span>
           </div>
           {errors.cardCvv && <p className="text-red-500 text-xs mt-1">{errors.cardCvv}</p>}
         </div>
