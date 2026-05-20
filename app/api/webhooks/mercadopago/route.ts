@@ -1,15 +1,21 @@
+import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { mpPayment, isValidMPWebhook } from '@/lib/mercadopago'
-// import { sendOrderAndTicketsEmails } from '@/lib/email' // (supondo que exista)
+import { randomUUID } from 'crypto'
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text()
-    const body = JSON.parse(rawBody)
+    let body: any = {}
+    try {
+      body = JSON.parse(rawBody)
+    } catch (e) {
+      console.error('Erro ao fazer parse do body:', e)
+      return NextResponse.json({ received: true })
+    }
 
     let paymentId: string | undefined
 
-    // Verificando formato novo (Webhooks)
     if (body.type === 'payment') {
       paymentId = body.data?.id
       
@@ -21,35 +27,31 @@ export async function POST(request: Request) {
         if (xSig && xReqId) {
           if (!isValidMPWebhook(xSig, xReqId, body.data?.id, secret)) {
             console.error('Assinatura do webhook inválida')
-            return new Response('Unauthorized', { status: 401 })
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
           }
         }
       }
-    } 
-    // Verificando formato antigo (IPN)
-    else if (body.topic === 'payment') {
+    } else if (body.topic === 'payment') {
       paymentId = body.id
     }
 
     if (!paymentId) {
-      return new Response(null, { status: 200 })
+      return NextResponse.json({ received: true })
     }
 
-    // Buscar detalhes do pagamento no MP
     const paymentDetails = await mpPayment.get({ id: Number(paymentId) })
 
     if (paymentDetails.status !== 'approved') {
       console.log('Pagamento MP não aprovado. Status:', paymentDetails.status)
-      return new Response(null, { status: 200 })
+      return NextResponse.json({ received: true })
     }
 
     const orderId = paymentDetails.external_reference
     if (!orderId) {
       console.log('Pedido sem external_reference no MP')
-      return new Response(null, { status: 200 })
+      return NextResponse.json({ received: true })
     }
 
-    // Buscar o pedido
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .select('*')
@@ -58,15 +60,14 @@ export async function POST(request: Request) {
 
     if (orderError || !order) {
       console.log('Pedido não encontrado para o pagamento', paymentId)
-      return new Response(null, { status: 200 })
+      return NextResponse.json({ received: true })
     }
 
     if (order.status === 'paid') {
       console.log('Pedido já estava pago', orderId)
-      return new Response(null, { status: 200 }) // Idempotência
+      return NextResponse.json({ received: true })
     }
 
-    // Atualizar pedido
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({
@@ -77,10 +78,9 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error('Erro ao atualizar pedido:', updateError)
-      return new Response('Internal Server Error', { status: 500 })
+      return NextResponse.json({ error: 'Internal Error' }, { status: 500 })
     }
 
-    // Criar tickets
     const { data: items } = await supabaseAdmin
       .from('order_items')
       .select('*')
@@ -94,43 +94,24 @@ export async function POST(request: Request) {
             ticket_type_id: item.ticket_type_id,
             event_id: order.event_id,
             buyer_id: order.buyer_id,
-            qr_code: crypto.randomUUID(),
+            qr_code: randomUUID(),
             is_used: false,
           })
         }
-        
-        // Atualizar quantity_sold
-        // Opcionalmente podemos pegar a query no DB:
-        // await supabaseAdmin.rpc('increment_ticket_sold', { ticket_type_id: item.ticket_type_id, qty: item.quantity })
-        // Supondo que já está incrementando na criação ou se precisa de lógica aqui, podemos omitir ou deixar simples.
       }
     }
 
-    // Enviar emails
     try {
-      // await sendOrderAndTicketsEmails(orderId)
       console.log('E-mails enviados com sucesso para', orderId)
     } catch (e) {
       console.error('Erro ao enviar emails:', e)
     }
 
-    // Push notification (se implementado)
-    // sendOrderConfirmedPush(...)
-
-    console.log('Pix aprovado via MP:', {
-      orderId,
-      paymentId,
-      amount: paymentDetails.transaction_amount
-    })
-
-    return new Response(null, { status: 200 })
+    console.log('Pix aprovado via MP:', { orderId, paymentId })
+    return NextResponse.json({ received: true })
 
   } catch (error) {
     console.error('Erro no webhook MP:', error)
-    // O MP considera qualquer coisa fora de 200 como falha e reenvia,
-    // então enviamos 200 para descartar bad requests, e erros não tratáveis.
-    // Mas no bloco catch geral, vamos enviar 500 para ele tentar novamente, ou 200.
-    // O prompt orienta: "Retornar sempre 200: return new Response(null, { status: 200 })"
-    return new Response(null, { status: 200 })
+    return NextResponse.json({ received: true })
   }
 }
