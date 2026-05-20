@@ -182,7 +182,7 @@ export async function getEventDetails(eventId: string, organizerId: string) {
 
   const { data: orders } = await supabaseAdmin
     .from('orders')
-    .select('created_at, total_amount, id, status, order_items(quantity, ticket_type_id, ticket_types(name)), profiles!buyer_id(name, email)')
+    .select('created_at, total_amount, id, status, payment_method, mp_installments, order_items(quantity, ticket_type_id, ticket_types(name)), profiles!buyer_id(name, email)')
     .eq('event_id', eventId)
     .order('created_at', { ascending: false })
 
@@ -258,7 +258,9 @@ export async function getEventDetails(eventId: string, organizerId: string) {
       ticket_types: ticketTypesBought,
       total_amount: o.total_amount,
       created_at: o.created_at,
-      status: o.status
+      status: o.status,
+      payment_method: o.payment_method,
+      mp_installments: o.mp_installments
     }
   })
 

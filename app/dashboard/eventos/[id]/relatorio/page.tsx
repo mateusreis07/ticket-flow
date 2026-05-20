@@ -151,6 +151,7 @@ export default async function EventReportPage({ params }: { params: { id: string
                   <th className="px-6 py-3">Comprador</th>
                   <th className="px-6 py-3">Ingressos comprados</th>
                   <th className="px-6 py-3">Valor</th>
+                  <th className="px-6 py-3">Pagamento</th>
                   <th className="px-6 py-3">Data</th>
                   <th className="px-6 py-3">Status</th>
                 </tr>
@@ -173,6 +174,16 @@ export default async function EventReportPage({ params }: { params: { id: string
                       break
                   }
 
+                  const getPaymentLabel = (method: string, installments?: number) => {
+                    if (method === 'pix') return 'Pix'
+                    if (method === 'card') {
+                      return installments && installments > 1 
+                        ? `Cartão (${installments}x)`
+                        : 'Cartão'
+                    }
+                    return '—'
+                  }
+
                   return (
                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
@@ -184,6 +195,9 @@ export default async function EventReportPage({ params }: { params: { id: string
                       </td>
                       <td className="px-6 py-4 font-medium text-gray-900">
                         {formatCurrency(order.total_amount)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {getPaymentLabel(order.payment_method, order.mp_installments)}
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-gray-500">{formatDate(order.created_at, "dd/MM/yyyy")}</div>

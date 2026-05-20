@@ -22,6 +22,27 @@ export type Event = {
 
 export type PaymentMethod = 'card' | 'pix'
 
+export type CardInstallment = {
+  quantity: number
+  amount: number
+  totalAmount: number
+  label: string
+}
+
+export type CardPaymentData = {
+  token: string
+  installments: number
+  paymentMethodId: string
+  issuerId?: string
+}
+
+export type CardPaymentResult = {
+  success: boolean
+  orderId?: string
+  error?: string
+  statusDetail?: string
+}
+
 export type PixPaymentData = {
   mpPaymentId: string
   qrCode: string
@@ -58,6 +79,11 @@ export type Order = {
   payment_method: PaymentMethod
   mp_payment_id: string | null
   mp_external_reference: string | null
+  mp_installments: number
+  mp_installment_amount: number | null
+  mp_card_last_four: string | null
+  mp_card_brand: string | null
+  mp_status_detail: string | null
   pix_qr_code: string | null
   pix_qr_code_base64: string | null
   pix_copy_paste: string | null

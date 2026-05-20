@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { formatCurrency } from '@/lib/utils/format'
 import type { AppliedCoupon, PaymentMethod, PixPaymentData } from '@/types'
 import CouponInput from '@/components/checkout/CouponInput'
-import PaymentButton from '@/components/checkout/PaymentButton'
+import { CardForm } from '@/components/checkout/CardForm'
 import CheckoutTimer from '@/components/checkout/CheckoutTimer'
-import { ShieldCheck } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector'
 import { PixPaymentDisplay } from '@/components/checkout/PixPaymentDisplay'
@@ -39,6 +39,7 @@ export default function CheckoutClient({
   const [pixData, setPixData] = useState<PixPaymentData | null>(initialPixData)
   const [showPixDisplay, setShowPixDisplay] = useState(!!initialPixData)
   const [isGeneratingPix, setIsGeneratingPix] = useState(false)
+  const [cardError, setCardError] = useState<string | null>(null)
 
   const currentTotal = appliedCoupon ? appliedCoupon.new_total : subtotal
 
@@ -146,7 +147,10 @@ export default function CheckoutClient({
 
       <PaymentMethodSelector
         selectedMethod={paymentMethod}
-        onMethodChange={setPaymentMethod}
+        onMethodChange={(method) => {
+          setPaymentMethod(method)
+          setCardError(null)
+        }}
         totalAmount={currentTotal}
       />
 
@@ -158,13 +162,18 @@ export default function CheckoutClient({
           onClick={handlePixPayment}
         />
       ) : (
-        <PaymentButton orderId={orderId} totalAmount={currentTotal} />
+        <CardForm 
+          orderId={orderId}
+          totalAmount={currentTotal}
+          onSuccess={(id) => router.push('/checkout/sucesso?order=' + id)}
+          onError={(msg) => setCardError(msg)}
+        />
       )}
 
-      {paymentMethod === 'card' && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
-          <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-          <span>Pagamento seguro via Stripe</span>
+      {cardError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-3 flex items-start gap-2">
+          <AlertCircle className="text-red-500 w-4 h-4 flex-shrink-0 mt-0.5" />
+          <span className="text-red-700 text-sm">{cardError}</span>
         </div>
       )}
 
