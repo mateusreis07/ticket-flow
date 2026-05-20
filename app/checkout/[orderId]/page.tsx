@@ -128,7 +128,7 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
           initialPaymentMethod={order.payment_method}
           initialPixData={initialPixData}
           event={event}
-          orderItems={orderItems}
+          orderItems={orderItems || []}
           buyerName={profile?.name || 'Comprador'}
           buyerEmail={user.email || ''}
           cancelOrderAction={handleCancelOrder}
