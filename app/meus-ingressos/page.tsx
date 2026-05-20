@@ -6,6 +6,8 @@ import { TicketWithDetails } from '@/types'
 import { EventTicketGroup, EventGroup } from '@/components/tickets/EventTicketGroup'
 import PushManager from '@/components/notifications/PushManager'
 
+export const dynamic = 'force-dynamic'
+
 export default async function MeusIngressosPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

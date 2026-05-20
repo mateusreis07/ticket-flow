@@ -194,12 +194,12 @@ export default async function SucessoPage({ searchParams }: SucessoPageProps) {
 
             {/* Botões de ação */}
             <div className="mt-8 space-y-3">
-              <Link
+              <a
                 href="/meus-ingressos"
                 className="block bg-primary text-white w-full rounded-xl py-3 font-medium hover:bg-primary-hover transition-colors"
               >
                 Ver meus ingressos
-              </Link>
+              </a>
               <Link
                 href="/"
                 className="block border border-gray-200 text-gray-600 w-full rounded-xl py-3 font-medium hover:bg-gray-50 transition-colors"
