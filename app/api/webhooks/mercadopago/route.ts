@@ -102,9 +102,29 @@ export async function POST(request: Request) {
     }
 
     try {
-      console.log('E-mails enviados com sucesso para', orderId)
-    } catch (e) {
-      console.error('Erro ao enviar emails:', e)
+      const { sendOrderAndTicketsEmails } = await import('@/lib/email')
+      await sendOrderAndTicketsEmails(orderId)
+      console.log(`✉️ E-mails enviados para pedido: ${orderId}`)
+    } catch (e: any) {
+      console.error('❌ Erro ao enviar emails:', e.message)
+    }
+
+    if (order.buyer_id) {
+      try {
+        const { sendOrderConfirmedPush } = await import('@/lib/push-notifications')
+        const { data: firstItem } = await supabaseAdmin
+          .from('order_items')
+          .select('ticket_types(events(title))')
+          .eq('order_id', orderId)
+          .limit(1)
+          .single()
+
+        const eventTitle = (firstItem?.ticket_types as unknown as { events?: { title: string } })?.events?.title ?? 'seu evento'
+        await sendOrderConfirmedPush(order.buyer_id, eventTitle, orderId)
+        console.log(`🔔 Push notification enviada para pedido: ${orderId}`)
+      } catch (pushError: any) {
+        console.error(`❌ Erro ao enviar push para o pedido ${orderId}:`, pushError.message)
+      }
     }
 
     console.log('Pix aprovado via MP:', { orderId, paymentId })
