@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { createCardPayment } from '@/lib/mercadopago'
-import { getBaseUrl } from '@/lib/utils'
 
 const schema = z.object({
   orderId: z.string().uuid(),
@@ -69,7 +68,7 @@ export async function POST(req: Request) {
         status: 'processing'
       })
 
-    const baseUrl = getBaseUrl()
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const notificationUrl = `${baseUrl}/api/webhooks/mercadopago`
 
     const payment = await createCardPayment({
