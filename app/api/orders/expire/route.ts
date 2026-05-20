@@ -15,11 +15,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    const now = new Date().toISOString()
     const { data: expiredOrders, error } = await supabaseAdmin
       .from('orders')
       .select('id')
       .eq('status', 'pending')
-      .lt('expires_at', new Date().toISOString())
+      .or(`expires_at.lt.${now},and(payment_method.eq.pix,pix_expires_at.lt.${now})`)
 
     if (error) throw error
 

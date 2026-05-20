@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { removeCouponFromOrder } from '@/lib/coupons'
+import { mpPayment } from '@/lib/mercadopago'
 
 export async function cancelOrder(orderId: string) {
   const supabase = await createClient()
@@ -114,6 +115,15 @@ export async function cancelExpiredOrder(orderId: string) {
   if (order.coupon_id) {
     console.log(`[cancelExpiredOrder] Revertendo uso do cupom ${order.coupon_id} para pedido ${orderId}`)
     await removeCouponFromOrder(orderId)
+  }
+
+  if (order.mp_payment_id && order.payment_method === 'pix') {
+    try {
+      await mpPayment.cancel({ id: Number(order.mp_payment_id) })
+      console.log('MP payment cancelled:', order.mp_payment_id)
+    } catch (e) {
+      console.log('MP payment já cancelado:', e)
+    }
   }
 
   await supabaseAdmin

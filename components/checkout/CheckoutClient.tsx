@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { formatCurrency } from '@/lib/utils/format'
-import type { AppliedCoupon } from '@/types'
+import type { AppliedCoupon, PaymentMethod, PixPaymentData } from '@/types'
 import CouponInput from '@/components/checkout/CouponInput'
 import PaymentButton from '@/components/checkout/PaymentButton'
 import CheckoutTimer from '@/components/checkout/CheckoutTimer'
 import { ShieldCheck } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { PaymentMethodSelector } from '@/components/checkout/PaymentMethodSelector'
+import { PixPaymentDisplay } from '@/components/checkout/PixPaymentDisplay'
+import { PixButton } from '@/components/checkout/PixButton'
 
 interface CheckoutClientProps {
   orderId: string
@@ -15,6 +18,8 @@ interface CheckoutClientProps {
   subtotal: number
   expiresAt: string | null
   initialCoupon: AppliedCoupon | null
+  initialPaymentMethod?: PaymentMethod
+  initialPixData?: PixPaymentData | null
   cancelOrderAction: () => Promise<void>
 }
 
@@ -24,9 +29,16 @@ export default function CheckoutClient({
   subtotal,
   expiresAt,
   initialCoupon,
+  initialPaymentMethod = 'pix',
+  initialPixData = null,
   cancelOrderAction,
 }: CheckoutClientProps) {
+  const router = useRouter()
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(initialCoupon)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialPaymentMethod)
+  const [pixData, setPixData] = useState<PixPaymentData | null>(initialPixData)
+  const [showPixDisplay, setShowPixDisplay] = useState(!!initialPixData)
+  const [isGeneratingPix, setIsGeneratingPix] = useState(false)
 
   const currentTotal = appliedCoupon ? appliedCoupon.new_total : subtotal
 
@@ -36,6 +48,53 @@ export default function CheckoutClient({
 
   const handleCouponRemoved = () => {
     setAppliedCoupon(null)
+  }
+
+  const handlePixPayment = async () => {
+    setIsGeneratingPix(true)
+    try {
+      const response = await fetch('/api/checkout/pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.free) {
+        router.push('/checkout/sucesso?order=' + orderId)
+        return
+      }
+      
+      if (data.success) {
+        setPixData(data.pixData)
+        setShowPixDisplay(true)
+      } else {
+        alert(data.error ?? 'Erro ao gerar Pix. Tente novamente ou use o cartão.')
+      }
+    } catch (error) {
+      alert('Erro de conexão ao gerar o Pix.')
+    } finally {
+      setIsGeneratingPix(false)
+    }
+  }
+
+  const handlePaymentConfirmed = () => {
+    router.push('/checkout/sucesso?order=' + orderId)
+  }
+
+  if (showPixDisplay && pixData) {
+    return (
+      <div className="sticky top-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+        <PixPaymentDisplay
+          pixData={pixData}
+          orderId={orderId}
+          totalAmount={currentTotal}
+          onPaymentConfirmed={handlePaymentConfirmed}
+          onCancel={() => setShowPixDisplay(false)}
+        />
+      </div>
+    )
   }
 
   return (
@@ -85,18 +144,29 @@ export default function CheckoutClient({
         />
       </div>
 
-      <PaymentButton orderId={orderId} totalAmount={currentTotal} />
+      <PaymentMethodSelector
+        selectedMethod={paymentMethod}
+        onMethodChange={setPaymentMethod}
+        totalAmount={currentTotal}
+      />
 
-      <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
-        <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-        <span>Pagamento seguro via Stripe</span>
-      </div>
+      {paymentMethod === 'pix' ? (
+        <PixButton
+          orderId={orderId}
+          totalAmount={currentTotal}
+          isLoading={isGeneratingPix}
+          onClick={handlePixPayment}
+        />
+      ) : (
+        <PaymentButton orderId={orderId} totalAmount={currentTotal} />
+      )}
 
-      <div className="mt-3 flex justify-center gap-2">
-        <span className="bg-gray-100 text-gray-500 text-[10px] rounded px-2 py-1 font-medium uppercase tracking-wider">Visa</span>
-        <span className="bg-gray-100 text-gray-500 text-[10px] rounded px-2 py-1 font-medium uppercase tracking-wider">Mastercard</span>
-        <span className="bg-gray-100 text-gray-500 text-[10px] rounded px-2 py-1 font-medium uppercase tracking-wider">Pix</span>
-      </div>
+      {paymentMethod === 'card' && (
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+          <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
+          <span>Pagamento seguro via Stripe</span>
+        </div>
+      )}
 
       <div className="mt-5 pt-4 border-t border-gray-100 text-center">
         <form action={cancelOrderAction}>

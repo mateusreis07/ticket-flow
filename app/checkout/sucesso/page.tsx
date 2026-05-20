@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { CheckCircle2, Ticket, Mail, Loader2 } from 'lucide-react'
+import { CheckCircle2, Ticket, Mail, Loader2, CreditCard } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import AutoRefresh from '@/components/checkout/AutoRefresh'
 
@@ -136,9 +136,28 @@ export default async function SucessoPage({ searchParams }: SucessoPageProps) {
             {orderData && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <p className="text-sm text-gray-500">Valor pago:</p>
-                <p className="font-bold text-primary text-xl mt-0.5">
-                  {formatCurrency(orderData.total_amount)}
-                </p>
+                <div className="flex items-center justify-center gap-3 mt-1">
+                  <p className="font-bold text-primary text-xl">
+                    {formatCurrency(orderData.total_amount)}
+                  </p>
+                  {orderData.payment_method === 'pix' ? (
+                    <span className="flex items-center gap-1.5 bg-[#32BCAD]/10 text-[#32BCAD] rounded-full px-3 py-1 text-sm font-medium">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.5 4L12 2L14.5 4L12 6Z" fill="currentColor"/>
+                        <path d="M20 9.5L22 12L20 14.5L18 12Z" fill="currentColor"/>
+                        <path d="M14.5 20L12 22L9.5 20L12 18Z" fill="currentColor"/>
+                        <path d="M4 14.5L2 12L4 9.5L6 12Z" fill="currentColor"/>
+                        <path d="M12 6L18 12L12 18L6 12Z" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                      </svg>
+                      Pago via Pix
+                    </span>
+                  ) : orderData.payment_method === 'card' ? (
+                    <span className="flex items-center gap-1.5 bg-gray-100 text-gray-600 rounded-full px-3 py-1 text-sm font-medium">
+                      <CreditCard className="w-4 h-4" />
+                      Cartão
+                    </span>
+                  ) : null}
+                </div>
               </div>
             )}
 

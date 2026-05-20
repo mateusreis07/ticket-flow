@@ -20,6 +20,24 @@ export type Event = {
   updated_at: string
 }
 
+export type PaymentMethod = 'card' | 'pix'
+
+export type PixPaymentData = {
+  mpPaymentId: string
+  qrCode: string
+  qrCodeBase64: string
+  copyPaste: string
+  expiresAt: string
+}
+
+export type MercadoPagoPaymentStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'cancelled'
+  | 'in_process'
+  | 'refunded'
+
 export type TicketType = {
   id: string
   event_id: string
@@ -37,6 +55,13 @@ export type Order = {
   status: 'pending' | 'paid' | 'cancelled' | 'refunded'
   total_amount: number
   stripe_session_id: string | null
+  payment_method: PaymentMethod
+  mp_payment_id: string | null
+  mp_external_reference: string | null
+  pix_qr_code: string | null
+  pix_qr_code_base64: string | null
+  pix_copy_paste: string | null
+  pix_expires_at: string | null
   created_at: string
 }
 

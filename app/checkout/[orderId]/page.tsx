@@ -76,6 +76,14 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
       }
     : null
 
+  const initialPixData = order.payment_method === 'pix' && order.pix_qr_code ? {
+    mpPaymentId: order.mp_payment_id || '',
+    qrCode: order.pix_qr_code,
+    qrCodeBase64: order.pix_qr_code_base64 || '',
+    copyPaste: order.pix_copy_paste || '',
+    expiresAt: order.pix_expires_at || '',
+  } : null
+
   // Server action para cancelar pedido
   async function handleCancelOrder() {
     'use server'
@@ -208,6 +216,8 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
               subtotal={subtotal}
               expiresAt={order.expires_at}
               initialCoupon={initialCoupon}
+              initialPaymentMethod={order.payment_method}
+              initialPixData={initialPixData}
               cancelOrderAction={handleCancelOrder}
             />
           </div>
