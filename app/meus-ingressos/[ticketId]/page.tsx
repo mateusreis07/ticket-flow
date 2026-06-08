@@ -25,6 +25,12 @@ export default async function TicketFullscreenPage({ params }: { params: { ticke
     notFound()
   }
 
+  const { data: order } = await supabase
+    .from('orders')
+    .select('status')
+    .eq('id', ticket.order_id)
+    .single()
+
   const t = ticket as TicketWithDetails
 
   return (
@@ -63,7 +69,19 @@ export default async function TicketFullscreenPage({ params }: { params: { ticke
         </div>
 
         <div className="mt-8">
-          {!t.is_used ? (
+          {order?.status === 'pending' ? (
+            <div className="flex flex-col items-center bg-amber-50 p-6 rounded-3xl border border-amber-200 shadow-sm max-w-xs mx-auto">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <TicketIcon className="h-8 w-8 text-amber-500 opacity-50" />
+              </div>
+              <h2 className="text-lg font-bold text-amber-800 mb-2">
+                Aguardando Pagamento
+              </h2>
+              <p className="text-sm text-amber-700">
+                O QR Code será liberado assim que o pagamento for aprovado. Você receberá um e-mail de confirmação.
+              </p>
+            </div>
+          ) : !t.is_used ? (
             <div className="flex flex-col items-center">
               <div className="bg-white p-5 rounded-3xl shadow-lg border border-gray-100 flex flex-col items-center">
                 <QRCodeSVG

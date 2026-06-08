@@ -94,19 +94,34 @@ export default async function SucessoPage({ searchParams }: SucessoPageProps) {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-10 max-w-md w-full text-center">
 
         {isPending ? (
-          // Estado: processando pagamento
+          // Estado: processando ou em análise
           <>
-            <AutoRefresh isPending={isPending} />
+            {orderData?.mp_status_detail !== 'pending_contingency' && <AutoRefresh isPending={isPending} />}
             <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-6">
-              <Loader2 className="h-10 w-10 text-amber-500 animate-spin" />
+              <Loader2 className={`h-10 w-10 text-amber-500 ${orderData?.mp_status_detail === 'pending_contingency' ? '' : 'animate-spin'}`} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Processando pagamento...</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              {orderData?.mp_status_detail === 'pending_contingency' 
+                ? 'Pagamento em análise' 
+                : 'Processando pagamento...'}
+            </h1>
             <p className="text-gray-500">
-              Aguarde alguns instantes enquanto confirmamos seu pagamento. Esta página atualizará automaticamente.
+              {orderData?.mp_status_detail === 'pending_contingency'
+                ? 'Seu pagamento com cartão está em análise de segurança. O resultado costuma sair em até 1 hora. Enviaremos a confirmação por e-mail.'
+                : 'Aguarde alguns instantes enquanto confirmamos seu pagamento. Esta página atualizará automaticamente.'}
             </p>
-            <p className="text-sm text-gray-400 mt-4">
-              Se isso demorar mais de 1 minuto, verifique seu e-mail ou entre em contato com o suporte.
-            </p>
+            {orderData?.mp_status_detail !== 'pending_contingency' && (
+              <p className="text-sm text-gray-400 mt-4">
+                Se isso demorar mais de 1 minuto, verifique seu e-mail ou entre em contato com o suporte.
+              </p>
+            )}
+            {orderData?.mp_status_detail === 'pending_contingency' && (
+              <div className="mt-8">
+                <Link href="/meus-ingressos" className="text-primary font-medium hover:underline">
+                  Acompanhar meus ingressos &rarr;
+                </Link>
+              </div>
+            )}
           </>
         ) : (
           // Estado: pagamento confirmado

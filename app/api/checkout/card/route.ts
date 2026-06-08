@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { randomUUID } from 'crypto'
 import { createCardPayment } from '@/lib/mercadopago'
 
 const schema = z.object({
@@ -69,7 +70,10 @@ export async function POST(req: Request) {
       })
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const notificationUrl = `${baseUrl}/api/webhooks/mercadopago`
+    // Mercado Pago rejeita localhost como notification_url. Usamos uma URL HTTPS dummy no ambiente local apenas para passar na validação.
+    const notificationUrl = baseUrl.includes('localhost') 
+      ? 'https://ticketflow-dummy.vercel.app/api/webhooks/mercadopago' 
+      : `${baseUrl}/api/webhooks/mercadopago`
 
     const payment = await createCardPayment({
       orderId,
@@ -85,17 +89,27 @@ export async function POST(req: Request) {
     })
 
     if (payment.status === 'approved') {
+      // Passo 1 — Atualizar somente status (coluna garantida)
+      const { error: statusErr } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'paid' })
+        .eq('id', orderId)
+
+      if (statusErr) {
+        console.error('CRÍTICO: Falha ao salvar status=paid:', statusErr)
+      }
+
+      // Passo 2 — Atualizar campos MP opcionais (best-effort, ignora erro se coluna inexistir)
       await supabaseAdmin
         .from('orders')
         .update({
-          status: 'paid',
           payment_method: 'card',
           mp_payment_id: payment.id?.toString(),
           mp_installments: installments,
           mp_installment_amount: payment.transaction_details?.installment_amount,
           mp_card_last_four: payment.card?.last_four_digits,
           mp_card_brand: payment.payment_method_id,
-          mp_status_detail: payment.status_detail
+          mp_status_detail: payment.status_detail,
         })
         .eq('id', orderId)
 
@@ -105,9 +119,36 @@ export async function POST(req: Request) {
         .eq('order_id', orderId)
         .eq('status', 'processing')
 
-      // A criação dos tickets e envio de e-mails/push serão feitos pelo webhook do MP também se necessário, 
-      // ou podem ser despachados aqui. Como a especificação diz para fazer no webhook (que recebe approved), 
-      // delegaremos a finalização para o webhook, apenas respondendo success.
+      // Criar tickets imediatamente (o webhook também os criaria, mas pode não chegar no localhost)
+      const { data: items } = await supabaseAdmin
+        .from('order_items')
+        .select('*')
+        .eq('order_id', orderId)
+
+      if (items) {
+        for (const item of items) {
+          for (let i = 0; i < item.quantity; i++) {
+            await supabaseAdmin.from('tickets').insert({
+              order_id: orderId,
+              ticket_type_id: item.ticket_type_id,
+              event_id: order.event_id,
+              buyer_id: order.buyer_id,
+              qr_code: randomUUID(),
+              is_used: false,
+            })
+          }
+        }
+      }
+
+      // Disparar e-mails em background (fire-and-forget)
+      try {
+        const { sendOrderAndTicketsEmails } = await import('@/lib/email')
+        sendOrderAndTicketsEmails(orderId).catch((e: any) =>
+          console.error('Erro ao enviar e-mail de confirmação:', e.message)
+        )
+      } catch (e: any) {
+        console.error('Erro ao importar módulo de e-mail:', e.message)
+      }
 
       return NextResponse.json({ success: true, orderId, installments })
     }
@@ -144,6 +185,7 @@ export async function POST(req: Request) {
         .eq('status', 'processing')
 
       const errorMessages: Record<string, string> = {
+        'cc_rejected_other_reason': 'Recusado por erro geral. Tente outro cartão.',
         'cc_rejected_insufficient_amount': 'Saldo insuficiente no cartão.',
         'cc_rejected_bad_filled_card_number': 'Número do cartão incorreto.',
         'cc_rejected_bad_filled_date': 'Data de validade incorreta.',

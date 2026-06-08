@@ -52,9 +52,28 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
     }
   }, [])
 
-  // Detect bin
+  // Detecção rápida de bandeira pelo primeiro dígito (local, sem API)
+  const detectBrandLocally = (digits: string): string | null => {
+    if (!digits) return null
+    if (digits[0] === '4') return 'visa'
+    if (digits[0] === '5') return 'master'
+    if (digits[0] === '3') return 'amex'
+    if (digits[0] === '6') return 'elo'
+    return null
+  }
+
+  // Detect bin — imediato no 1º dígito, confirmado pela API MP a partir do 6º
   useEffect(() => {
     const digits = cardNumber.replace(/\D/g, '')
+
+    // Detecção imediata pelo prefixo (1 dígito já é suficiente)
+    const quickBrand = detectBrandLocally(digits)
+    if (quickBrand) {
+      setCardBrand(quickBrand)
+    } else if (digits.length === 0) {
+      setCardBrand(null)
+    }
+
     if (digits.length >= 6) {
       const bin = digits.slice(0, 6)
       if (bin !== binRef.current) {
@@ -65,7 +84,6 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
       binRef.current = ''
       setAvailableInstallments([])
       setSelectedInstallment(null)
-      setCardBrand(null)
     }
   }, [cardNumber, totalAmount])
 
@@ -152,8 +170,8 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
       newErrors.cardNumber = 'Número inválido'
     }
     
-    if (cardName.trim().split(' ').length < 2) {
-      newErrors.cardName = 'Nome completo'
+    if (cardName.trim().length < 3) {
+      newErrors.cardName = 'Nome inválido'
     }
     
     if (cardExpiry.length !== 5) {
@@ -303,11 +321,27 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
         <label className="text-sm font-medium text-gray-700">CPF do titular</label>
         <input
           value={cpf}
-          onChange={(e) => setCpf(formatCpf(e.target.value))}
+          onChange={(e) => {
+            setCpf(formatCpf(e.target.value))
+            // Limpar erro enquanto digita
+            if (errors.cpf) setErrors(prev => ({ ...prev, cpf: '' }))
+          }}
+          onBlur={() => {
+            // Validar ao sair do campo
+            if (cpf && !validateCPF(cpf)) {
+              setErrors(prev => ({ ...prev, cpf: 'CPF inválido' }))
+            } else {
+              setErrors(prev => ({ ...prev, cpf: '' }))
+            }
+          }}
           placeholder="000.000.000-00"
           maxLength={14}
           inputMode="numeric"
-          className="w-full mt-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          className={`w-full mt-1 border rounded-xl px-4 py-3 text-sm focus:ring-1 outline-none transition-all ${
+            errors.cpf
+              ? 'border-red-400 focus:border-red-400 focus:ring-red-200'
+              : 'border-gray-300 focus:border-primary focus:ring-primary'
+          }`}
         />
         {errors.cpf && <p className="text-red-500 text-xs mt-1">{errors.cpf}</p>}
         <p className="text-xs text-gray-400 mt-1">Necessário para processar o pagamento</p>

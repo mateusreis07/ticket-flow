@@ -23,7 +23,14 @@ export default async function MeusIngressosPage() {
     .order('event_date', { ascending: false })
     .order('created_at', { ascending: false })
 
-  const typedTickets = (tickets || []) as TicketWithDetails[]
+  const orderIds = Array.from(new Set((tickets || []).map(t => t.order_id)))
+  const { data: orders } = await supabase.from('orders').select('id, status').in('id', orderIds)
+  const orderMap = new Map((orders || []).map(o => [o.id, o.status]))
+
+  const typedTickets = (tickets || []).map(t => ({
+    ...t,
+    order_status: orderMap.get(t.order_id)
+  })) as TicketWithDetails[]
 
   const groupedEvents = new Map<string, EventGroup>()
   typedTickets.forEach(ticket => {

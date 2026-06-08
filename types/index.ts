@@ -134,6 +134,7 @@ export type TicketWithDetails = {
   buyer_name: string
   buyer_email: string
   is_courtesy: boolean
+  order_status?: string
 }
 
 export type OverviewMetrics = {

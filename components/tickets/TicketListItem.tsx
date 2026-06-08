@@ -24,6 +24,10 @@ export function TicketListItem({ ticket, isPast }: TicketListItemProps) {
             <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
               <CheckCircle2 className="h-[18px] w-[18px] text-gray-400" />
             </div>
+          ) : ticket.order_status === 'pending' ? (
+            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <QrCode className="h-[18px] w-[18px] text-amber-500 opacity-50" />
+            </div>
           ) : !isPast ? (
             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
               <QrCode className="h-[18px] w-[18px] text-green-600" />
@@ -47,6 +51,10 @@ export function TicketListItem({ ticket, isPast }: TicketListItemProps) {
             {ticket.is_used ? (
               <p className="text-xs text-gray-400 mt-0.5">
                 Utilizado em {formatDate(ticket.used_at || new Date().toISOString(), "dd/MM/yyyy HH:mm")}
+              </p>
+            ) : ticket.order_status === 'pending' ? (
+              <p className="text-xs text-amber-600 font-medium mt-0.5">
+                Pagamento em análise
               </p>
             ) : !isPast ? (
               <p className="text-xs text-green-600 font-medium mt-0.5">

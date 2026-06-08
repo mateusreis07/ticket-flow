@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import { Toaster } from '@/components/ui/sonner'
-import TestModeBanner from '@/components/layout/TestModeBanner'
 import { config } from '@/lib/config'
 import PWARegistration from '@/components/notifications/PWARegistration'
 
@@ -57,7 +56,6 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
         <PWARegistration />
         <Header />
-        <TestModeBanner isTestMode={config.app.isTestMode} />
         <main>{children}</main>
         <Toaster richColors position="top-right" />
       </body>

@@ -115,7 +115,13 @@ export async function POST(request: Request) {
       .select('*')
       .eq('order_id', orderId)
 
-    if (items) {
+    // Checar se tickets já foram gerados pela rota do cartão para evitar duplicatas
+    const { count: existingTickets } = await supabaseAdmin
+      .from('tickets')
+      .select('id', { count: 'exact', head: true })
+      .eq('order_id', orderId)
+
+    if (items && (!existingTickets || existingTickets === 0)) {
       for (const item of items) {
         for (let i = 0; i < item.quantity; i++) {
           await supabaseAdmin.from('tickets').insert({
