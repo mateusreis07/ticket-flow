@@ -6,6 +6,7 @@ import { CATEGORIES } from '@/lib/constants/events'
 import Link from 'next/link'
 import { getTopOrganizers } from '@/lib/queries/organizers'
 import { OrganizerCard } from '@/components/organizers/OrganizerCard'
+import { getAllCitiesWithEvents, getCitySlug } from '@/lib/queries/seo'
 
 export default async function Home() {
   // Fetch events with relations using admin client to bypass RLS
@@ -21,7 +22,11 @@ export default async function Home() {
     .order('event_date', { ascending: true })
     .limit(12)
 
-  const topOrganizers = await getTopOrganizers(6)
+  const [topOrganizers, allCities] = await Promise.all([
+    getTopOrganizers(6),
+    getAllCitiesWithEvents()
+  ])
+  const topCities = allCities.slice(0, 8)
 
   // Format events to match EventCard props
   const events = rawEvents?.map(event => {
@@ -154,6 +159,43 @@ export default async function Home() {
           )}
         </div>
       </section>
+
+      {/* Explore by City Section */}
+      {topCities.length > 0 && (
+        <section className="py-16 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+                  Eventos perto de você
+                </h2>
+                <p className="text-gray-500 mt-2">Explore as cidades com mais eventos acontecendo</p>
+              </div>
+              <Link href="/eventos" className="text-sm font-medium text-primary hover:text-primary-hover transition-colors">
+                Ver todas as cidades →
+              </Link>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-4 md:pb-0">
+              {topCities.map(city => (
+                <Link key={city.city} href={`/eventos/${getCitySlug(city.city)}`}>
+                  <div className="flex-shrink-0 min-w-[240px] md:min-w-0 bg-white border border-gray-200 rounded-xl px-5 py-4 hover:border-primary hover:shadow-sm transition-all h-full">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{city.city}</p>
+                        <p className="text-xs text-gray-500">{city.state}</p>
+                      </div>
+                      <div className="bg-primary-light text-primary text-xs font-semibold rounded-full px-2.5 py-1">
+                        {city.count} evento{city.count !== 1 && 's'}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

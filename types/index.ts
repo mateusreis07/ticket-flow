@@ -3,6 +3,9 @@ export type Profile = {
   name: string
   email: string
   role: 'buyer' | 'organizer'
+  auth_provider: 'email' | 'google' | 'apple'
+  needs_role_selection: boolean
+  avatar_url: string | null
   created_at: string
 }
 

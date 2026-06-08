@@ -21,7 +21,27 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: 'api.qrserver.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: '/eventos/:cidade/shows',
+        destination: '/eventos/:cidade?categoria=show',
+        permanent: false,
+      },
+      {
+        source: '/shows-em-:cidade',
+        destination: '/eventos/:cidade?categoria=show',
+        permanent: true,
+      },
+      {
+        source: '/ingressos',
+        destination: '/busca',
+        permanent: true,
+      },
+    ]
   },
   async headers() {
     return [

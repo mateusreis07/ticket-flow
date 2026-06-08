@@ -8,7 +8,7 @@ import { OrganizerProfile } from '@/types'
 import { updateOrganizerProfile, checkUsernameAvailable } from '@/lib/actions/profile'
 import { createClient } from '@/lib/supabase/client'
 
-export function ProfileForm({ organizer, userId }: { organizer: OrganizerProfile, userId: string }) {
+export function ProfileForm({ organizer, userId, authProvider }: { organizer: OrganizerProfile, userId: string, authProvider?: string }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -231,6 +231,12 @@ export function ProfileForm({ organizer, userId }: { organizer: OrganizerProfile
                 Alterar foto
               </button>
               <p className="text-xs text-gray-500 mt-2">JPG, PNG ou WebP. Máximo 2MB.</p>
+              {authProvider === 'google' && avatarUrl && avatarUrl === organizer.avatar_url && (
+                <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                  Foto importada da sua conta Google.<br/>
+                  Você pode substituir por outra imagem.
+                </p>
+              )}
             </div>
           </div>
         </div>

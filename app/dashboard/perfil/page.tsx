@@ -18,7 +18,7 @@ export default async function DashboardProfilePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, name')
+    .select('role, name, auth_provider')
     .eq('id', user.id)
     .single()
 
@@ -57,7 +57,7 @@ export default async function DashboardProfilePage() {
         </div>
 
         {/* Profile Form (Client Component) */}
-        <ProfileForm organizer={organizer} userId={user.id} />
+        <ProfileForm organizer={organizer} userId={user.id} authProvider={profile?.auth_provider || 'email'} />
 
       </div>
     </>

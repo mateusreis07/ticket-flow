@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { LogOut, LayoutDashboard, Ticket, Settings as SettingsIcon } from 'lucide-react'
 import { redirect } from 'next/navigation'
@@ -32,7 +33,7 @@ export default async function Header() {
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('name, role')
+      .select('name, role, avatar_url')
       .eq('id', user.id)
       .single()
     profile = data
@@ -88,10 +89,20 @@ export default async function Header() {
               {/* Avatar dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none">
-                  <Avatar className="h-9 w-9 bg-primary-light text-primary border border-primary/10 hover:ring-2 hover:ring-primary/20 active:scale-90 transition-all">
-                    <AvatarFallback className="font-semibold text-xs">
-                      {profile?.name ? getInitials(profile.name) : user.email?.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                  <Avatar className="relative h-9 w-9 bg-primary-light text-primary border border-primary/10 hover:ring-2 hover:ring-primary/20 active:scale-90 transition-all overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <Image 
+                        src={profile.avatar_url} 
+                        alt={profile.name || 'User'} 
+                        fill 
+                        className="object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <AvatarFallback className="font-semibold text-xs">
+                        {profile?.name ? getInitials(profile.name) : user.email?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white border border-gray-200 shadow-xl">
@@ -106,12 +117,13 @@ export default async function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="p-0">
                     <Link 
-                      href="/dashboard/configuracoes" 
+                      href={profile?.role === 'organizer' ? "/dashboard/configuracoes" : "/configuracoes"} 
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                     >
                       <SettingsIcon className="h-4 w-4 text-gray-500" />
                       Configurações
                     </Link>
+
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="p-0">

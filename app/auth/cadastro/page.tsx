@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { signUp } from '@/lib/supabase/actions'
 import { Ticket, Check, User, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Nome deve ter ao menos 2 caracteres'),
@@ -24,6 +25,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function CadastroPage() {
   const searchParams = useSearchParams()
   const redirectPath = searchParams.get('redirect') || ''
+  const oauthError = searchParams.get('error')
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -115,10 +117,21 @@ export default function CadastroPage() {
                 <p className="text-gray-500 text-sm mt-1">Comece a usar o TicketFlow hoje mesmo</p>
               </div>
 
-              {errorMsg && (
+              <GoogleLoginButton label="Cadastrar com Google" />
+              <p className="text-xs text-gray-400 text-center mt-2">
+                Ao usar o Google, você escolherá seu tipo de conta na próxima etapa.
+              </p>
+
+              <div className="flex items-center gap-3 my-6">
+                <div className="flex-1 border-t border-gray-200"></div>
+                <span className="text-xs text-gray-400 font-medium px-2 uppercase tracking-wider">ou</span>
+                <div className="flex-1 border-t border-gray-200"></div>
+              </div>
+
+              {(errorMsg || oauthError) && (
                 <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{errorMsg}</p>
+                  <p className="text-sm text-red-700">{errorMsg || oauthError}</p>
                 </div>
               )}
 

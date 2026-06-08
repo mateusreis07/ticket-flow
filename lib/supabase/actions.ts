@@ -73,3 +73,39 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/')
 }
+
+import { headers } from 'next/headers'
+
+export async function signInWithGoogle(redirectTo?: string) {
+  const supabase = await createClient()
+  const origin = (await headers()).get('origin') ?? process.env.NEXT_PUBLIC_APP_URL!
+  
+  const callbackUrl = new URL('/auth/callback', origin)
+  
+  if (redirectTo) {
+    callbackUrl.searchParams.set('next', redirectTo)
+  } else {
+    callbackUrl.searchParams.set('next', '/meus-ingressos')
+  }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: callbackUrl.toString(),
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  })
+
+  if (error) {
+    console.error('OAuth error:', error.message)
+    return { error: error.message }
+  }
+
+  if (data.url) {
+    redirect(data.url)
+  }
+}
+

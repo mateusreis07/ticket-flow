@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, Clock, XCircle, BadgeCheck } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import TicketSelectorManager from '@/components/events/TicketSelectorManager'
+import EventStructuredData from '@/components/seo/EventStructuredData'
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const { data: event } = await supabaseAdmin.from('events').select('*').eq('id', params.id).single()
@@ -47,6 +48,20 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
   const { data: { user } } = await supabase.auth.getUser()
   const isLoggedIn = !!user
+
+  const activeTickets = ticketTypes || []
+  const prices = activeTickets.map(t => t.price)
+  const min_price = prices.length > 0 ? Math.min(...prices) : 0
+  const total_sold = activeTickets.reduce((acc, t) => acc + (t.quantity_sold || 0), 0)
+  const total_capacity = activeTickets.reduce((acc, t) => acc + (t.quantity_total || 0), 0)
+
+  const eventDataForSeo = {
+    ...event,
+    organizer_name: event.profiles?.name || 'Organizador',
+    min_price,
+    total_sold,
+    total_capacity
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -187,6 +202,7 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
         </div>
       </div>
+      <EventStructuredData event={eventDataForSeo as any} />
     </div>
   )
 }

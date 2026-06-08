@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { signIn } from '@/lib/supabase/actions'
 import { Ticket, Check, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -19,6 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const searchParams = useSearchParams()
   const redirectPath = searchParams.get('redirect') || ''
+  const oauthError = searchParams.get('error')
   const [showPassword, setShowPassword] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -90,10 +92,24 @@ export default function LoginPage() {
             <p className="text-gray-500 text-sm mt-1">Entre na sua conta para continuar</p>
           </div>
 
-          {errorMsg && (
+          <GoogleLoginButton redirectTo={redirectPath || undefined} label="Entrar com Google" />
+
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 border-t border-gray-200"></div>
+            <span className="text-xs text-gray-400 font-medium px-2 uppercase tracking-wider">ou</span>
+            <div className="flex-1 border-t border-gray-200"></div>
+          </div>
+
+          {(errorMsg || oauthError) && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{errorMsg}</p>
+              <p className="text-sm text-red-700">
+                {errorMsg || 
+                  (oauthError?.toLowerCase().includes('email') 
+                    ? 'Este e-mail já está cadastrado com senha. Entre com e-mail e senha abaixo ou use outro e-mail no Google.' 
+                    : oauthError)
+                }
+              </p>
             </div>
           )}
 
