@@ -1,17 +1,17 @@
 import * as Sentry from '@sentry/nextjs'
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
-    return Response.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  Sentry.captureException(
-    new Error('Teste de erro de API — ' + new Date()),
-    { tags: { test: 'true' } }
+  const eventId = Sentry.captureException(
+    new Error('🧪 Teste de erro de API (server-side) — ' + new Date().toISOString()),
+    { tags: { test: 'true', route: 'api/sentry-test' } }
   )
 
-  return Response.json({
-    message: 'Erro de teste enviado ao Sentry',
-    timestamp: new Date().toISOString(),
-  })
+  return Response.json(
+    {
+      message: 'Erro capturado e enviado ao Sentry!',
+      eventId,
+      timestamp: new Date().toISOString(),
+    },
+    { status: 500 }
+  )
 }
