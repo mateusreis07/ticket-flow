@@ -10,9 +10,10 @@ Sentry.init({
   replaysSessionSampleRate: 0.0,
   replaysOnErrorSampleRate: 0.0,
 
-  debug: false,
+  debug: process.env.NODE_ENV !== 'production',
 
-  enabled: process.env.NODE_ENV === 'production' || process.env.SENTRY_FORCE_ENABLE === 'true',
+  // Habilitado sempre que o DSN estiver configurado
+  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   integrations: [
     Sentry.replayIntegration({

@@ -7,9 +7,9 @@ Sentry.init({
 
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-  debug: false,
+  debug: process.env.NODE_ENV !== 'production',
 
-  enabled: process.env.NODE_ENV === 'production' || process.env.SENTRY_FORCE_ENABLE === 'true',
+  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   beforeSend(event, hint) {
     const error = hint.originalException
