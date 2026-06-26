@@ -3,12 +3,16 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { mpPayment, formatAmountForMP } from '@/lib/mercadopago'
+import * as Sentry from '@sentry/nextjs'
 
 const pixRequestSchema = z.object({
   orderId: z.string().uuid(),
 })
 
 export async function POST(request: Request) {
+  let reqBody: any = null
+  let userId: string | null = null
+
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -16,8 +20,10 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
+    userId = user.id
 
     const body = await request.json()
+    reqBody = body
     const parsed = pixRequestSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: 'Requisição inválida' }, { status: 400 })
@@ -156,7 +162,12 @@ export async function POST(request: Request) {
       }
     })
   } catch (error: any) {
+    Sentry.captureException(error, {
+      tags: { route: 'checkout_pix' },
+      extra: { orderId: reqBody?.orderId },
+      user: { id: userId || 'unknown' },
+    })
     console.error('Erro em /api/checkout/pix:', error)
-    return NextResponse.json({ success: false, error: error.message || 'Erro interno ao processar Pix.' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Erro ao gerar Pix. Tente novamente.' }, { status: 500 })
   }
 }

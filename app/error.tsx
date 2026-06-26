@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import * as Sentry from '@sentry/nextjs'
 
 export default function Error({
   error,
@@ -14,6 +15,12 @@ export default function Error({
   const router = useRouter()
 
   useEffect(() => {
+    Sentry.captureException(error, {
+      tags: {
+        location: 'error_boundary',
+        digest: error.digest ?? 'unknown',
+      },
+    })
     console.error('Global Error Boundary caught:', error)
   }, [error])
 
@@ -41,6 +48,16 @@ export default function Error({
             Voltar ao início
           </button>
         </div>
+
+        {process.env.NODE_ENV !== 'production' && (
+          <div className="bg-gray-100 rounded-xl p-4 mt-4 w-full text-left overflow-auto max-h-40">
+            <p className="text-xs font-mono text-gray-500 mb-2">Debug (apenas em desenvolvimento):</p>
+            <pre className="text-xs text-red-600 whitespace-pre-wrap break-all">
+              {error.message}
+              {error.stack ? '\n\n' + error.stack : ''}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   )

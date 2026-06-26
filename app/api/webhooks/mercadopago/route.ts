@@ -3,9 +3,20 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { mpPayment, isValidMPWebhook } from '@/lib/mercadopago'
 import { randomUUID } from 'crypto'
 
+import * as Sentry from '@sentry/nextjs'
+
 export async function POST(request: Request) {
+  Sentry.setContext('webhook', {
+    provider: 'mercadopago',
+    timestamp: new Date().toISOString(),
+  })
+  
+  let rawBody: string | undefined
+  let paymentId: string | undefined
+  let orderId: string | undefined
+
   try {
-    const rawBody = await request.text()
+    rawBody = await request.text()
     let body: any = {}
     try {
       body = JSON.parse(rawBody)
@@ -13,8 +24,6 @@ export async function POST(request: Request) {
       console.error('Erro ao fazer parse do body:', e)
       return NextResponse.json({ received: true })
     }
-
-    let paymentId: string | undefined
 
     if (body.type === 'payment') {
       paymentId = body.data?.id
@@ -40,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     const paymentDetails = await mpPayment.get({ id: Number(paymentId) })
-    const orderId = paymentDetails.external_reference
+    orderId = paymentDetails.external_reference
 
     if (!orderId) {
       console.log('Pedido sem external_reference no MP')
@@ -73,7 +82,6 @@ export async function POST(request: Request) {
     // Tratar cancelamento
     if (paymentDetails.status === 'cancelled') {
       console.log('Pagamento cancelado:', paymentId)
-      // Podemos chamar alguma função cancelExpiredOrder ou apenas atualizar o status
       if (order.status === 'pending') {
         await supabaseAdmin
           .from('orders')
@@ -115,7 +123,6 @@ export async function POST(request: Request) {
       .select('*')
       .eq('order_id', orderId)
 
-    // Checar se tickets já foram gerados pela rota do cartão para evitar duplicatas
     const { count: existingTickets } = await supabaseAdmin
       .from('tickets')
       .select('id', { count: 'exact', head: true })
@@ -166,8 +173,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true })
 
   } catch (error) {
-    console.error('Erro no webhook MP:', error)
-    return NextResponse.json({ received: true })
+    Sentry.captureException(error, {
+      tags: {
+        webhook: 'mercadopago',
+        critical: 'true',
+      },
+      extra: {
+        body: rawBody?.slice(0, 500),
+        paymentId: paymentId ?? 'unknown',
+        orderId: orderId ?? 'unknown',
+      },
+    })
+    console.error('Webhook MP error:', error)
+    return new Response(null, { status: 200 })
   }
 }
 

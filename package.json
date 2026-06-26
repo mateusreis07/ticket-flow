@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
+    "@sentry/nextjs": "^10.62.0",
     "@stripe/stripe-js": "^9.4.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",

@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header'
 import { Toaster } from '@/components/ui/sonner'
 import { config } from '@/lib/config'
 import PWARegistration from '@/components/notifications/PWARegistration'
+import SentryUserIdentifier from '@/components/sentry/SentryUserIdentifier'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -56,6 +57,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-gray-900 antialiased`}>
         <PWARegistration />
         <Header />
+        <SentryUserIdentifier />
         <main>{children}</main>
         <Toaster richColors position="top-right" />
       </body>

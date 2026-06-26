@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
 import { createCardPayment } from '@/lib/mercadopago'
+import * as Sentry from '@sentry/nextjs'
 
 const schema = z.object({
   orderId: z.string().uuid(),
@@ -15,6 +16,9 @@ const schema = z.object({
 })
 
 export async function POST(req: Request) {
+  let reqBody: any = null
+  let userId: string | null = null
+  
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -22,8 +26,10 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ success: false, error: 'Não autorizado' }, { status: 401 })
     }
+    userId = user.id
 
     const body = await req.json()
+    reqBody = body
     const result = schema.safeParse(body)
 
     if (!result.success) {
@@ -210,10 +216,27 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: false, error: 'Status desconhecido.' }, { status: 400 })
   } catch (error: any) {
+    Sentry.captureException(error, {
+      tags: { route: 'checkout_card' },
+      extra: {
+        orderId: reqBody?.orderId,
+        installments: reqBody?.installments,
+        paymentMethodId: reqBody?.paymentMethodId,
+      },
+      user: { id: userId || 'unknown' },
+    })
+    
+    if (reqBody?.orderId) {
+      await supabaseAdmin
+        .from('payment_attempts')
+        .update({ status: 'error', error_message: error.message })
+        .eq('order_id', reqBody.orderId)
+    }
+
     console.error('Erro ao processar pagamento com cartão:', error)
     return NextResponse.json({
       success: false,
-      error: 'Erro ao processar pagamento. Tente novamente.'
+      error: 'Erro ao processar cartão. Tente novamente.'
     }, { status: 500 })
   }
 }
