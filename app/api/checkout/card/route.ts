@@ -5,6 +5,9 @@ import { z } from 'zod'
 import { randomUUID } from 'crypto'
 import { createCardPayment } from '@/lib/mercadopago'
 import * as Sentry from '@sentry/nextjs'
+import { checkRateLimit, getIdentifier, rateLimitResponse } from '@/lib/rate-limit'
+import { reportSuspiciousActivity } from '@/lib/sentry'
+import { trackRejectedPayment, sleep } from '@/lib/fraud-detection'
 
 const schema = z.object({
   orderId: z.string().uuid(),
@@ -13,6 +16,7 @@ const schema = z.object({
   paymentMethodId: z.string().min(1),
   issuerId: z.string().optional(),
   cpf: z.string().optional(),
+  cardLastFour: z.string().optional(), // Adding this to track cards securely
 })
 
 export async function POST(req: Request) {
@@ -28,6 +32,22 @@ export async function POST(req: Request) {
     }
     userId = user.id
 
+    const identifier = getIdentifier(req)
+    const [ipLimit, userLimit] = await Promise.all([
+      checkRateLimit('payment', 'ip:' + identifier),
+      checkRateLimit('payment', 'user:' + userId),
+    ])
+
+    if (!ipLimit.success || !userLimit.success) {
+      const result = !ipLimit.success ? ipLimit : userLimit
+      reportSuspiciousActivity('rate_limit_hit', {
+        ip: identifier,
+        userId,
+        route: 'card',
+      })
+      return rateLimitResponse(result)
+    }
+
     const body = await req.json()
     reqBody = body
     const result = schema.safeParse(body)
@@ -36,7 +56,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Dados inválidos' }, { status: 400 })
     }
 
-    const { orderId, token, installments, paymentMethodId, issuerId, cpf } = result.data
+    const { orderId, token, installments, paymentMethodId, issuerId, cpf, cardLastFour } = result.data
+
+    const { count } = await supabaseAdmin
+      .from('payment_attempts')
+      .select('id', { count: 'exact' })
+      .eq('order_id', orderId)
+      .eq('status', 'rejected')
+
+    if (count !== null && count >= 3) {
+      return NextResponse.json({
+        error: 'Número máximo de tentativas atingido. Use outro método de pagamento.',
+      }, { status: 429 })
+    }
+
+    if (count === 1) await sleep(1000)
+    if (count === 2) await sleep(3000)
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -76,7 +111,6 @@ export async function POST(req: Request) {
       })
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    // Mercado Pago rejeita localhost como notification_url. Usamos uma URL HTTPS dummy no ambiente local apenas para passar na validação.
     const notificationUrl = baseUrl.includes('localhost') 
       ? 'https://ticketflow-dummy.vercel.app/api/webhooks/mercadopago' 
       : `${baseUrl}/api/webhooks/mercadopago`
@@ -95,7 +129,6 @@ export async function POST(req: Request) {
     })
 
     if (payment.status === 'approved') {
-      // Passo 1 — Atualizar somente status (coluna garantida)
       const { error: statusErr } = await supabaseAdmin
         .from('orders')
         .update({ status: 'paid' })
@@ -105,7 +138,6 @@ export async function POST(req: Request) {
         console.error('CRÍTICO: Falha ao salvar status=paid:', statusErr)
       }
 
-      // Passo 2 — Atualizar campos MP opcionais (best-effort, ignora erro se coluna inexistir)
       await supabaseAdmin
         .from('orders')
         .update({
@@ -125,7 +157,6 @@ export async function POST(req: Request) {
         .eq('order_id', orderId)
         .eq('status', 'processing')
 
-      // Criar tickets imediatamente (o webhook também os criaria, mas pode não chegar no localhost)
       const { data: items } = await supabaseAdmin
         .from('order_items')
         .select('*')
@@ -146,7 +177,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // Disparar e-mails em background (fire-and-forget)
       try {
         const { sendOrderAndTicketsEmails } = await import('@/lib/email')
         sendOrderAndTicketsEmails(orderId).catch((e: any) =>
@@ -189,6 +219,17 @@ export async function POST(req: Request) {
         .update({ status: 'rejected', error_message: payment.status_detail })
         .eq('order_id', orderId)
         .eq('status', 'processing')
+        
+      if (cardLastFour) {
+        const fraudResult = await trackRejectedPayment(orderId, identifier, cardLastFour)
+        if (fraudResult.shouldBlock) {
+          return NextResponse.json({
+            success: false,
+            error: 'Muitos cartões diferentes tentados. Operação bloqueada temporariamente.',
+            statusDetail: payment.status_detail
+          }, { status: 429 })
+        }
+      }
 
       const errorMessages: Record<string, string> = {
         'cc_rejected_other_reason': 'Recusado por erro geral. Tente outro cartão.',

@@ -70,6 +70,16 @@ export function PixPaymentDisplay({ pixData, orderId, totalAmount, onPaymentConf
     setIsChecking(true)
     try {
       const res = await fetch(`/api/checkout/pix/status?orderId=${orderId}`)
+      
+      if (res.status === 429) {
+        alert('Muitas requisições. Aguarde um momento.')
+        return
+      }
+      if (res.status === 503) {
+        alert('Serviço temporariamente indisponível. Tente novamente.')
+        return
+      }
+
       if (res.ok) {
         const data = await res.json()
         if (data.status === 'paid') {

@@ -37,27 +37,9 @@ export async function cancelOrder(orderId: string) {
     return { error: 'Pedido já pago não pode ser cancelado aqui.' }
   }
 
-  const { data: items } = await supabaseAdmin
-    .from('order_items')
-    .select('*')
-    .eq('order_id', orderId)
-
-  if (items) {
-    for (const item of items) {
-      const { data: tt } = await supabaseAdmin
-        .from('ticket_types')
-        .select('quantity_sold')
-        .eq('id', item.ticket_type_id)
-        .single()
-        
-      if (tt) {
-        await supabaseAdmin
-          .from('ticket_types')
-          .update({ quantity_sold: Math.max(0, tt.quantity_sold - item.quantity) })
-          .eq('id', item.ticket_type_id)
-      }
-    }
-  }
+  await supabaseAdmin.rpc('release_tickets', {
+    p_order_id: orderId
+  })
 
   // Se tiver cupom, reverter o uso
   if (fullOrder?.coupon_id) {
@@ -69,6 +51,7 @@ export async function cancelOrder(orderId: string) {
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', orderId)
+    .eq('status', 'pending')
 
   revalidatePath('/checkout/' + orderId)
   redirect('/checkout/cancelado')
@@ -89,27 +72,9 @@ export async function cancelExpiredOrder(orderId: string) {
     return { error: 'Apenas pedidos pendentes podem ser expirados' }
   }
 
-  const { data: items } = await supabaseAdmin
-    .from('order_items')
-    .select('*')
-    .eq('order_id', orderId)
-
-  if (items) {
-    for (const item of items) {
-      const { data: tt } = await supabaseAdmin
-        .from('ticket_types')
-        .select('quantity_sold')
-        .eq('id', item.ticket_type_id)
-        .single()
-        
-      if (tt) {
-        await supabaseAdmin
-          .from('ticket_types')
-          .update({ quantity_sold: Math.max(0, tt.quantity_sold - item.quantity) })
-          .eq('id', item.ticket_type_id)
-      }
-    }
-  }
+  await supabaseAdmin.rpc('release_tickets', {
+    p_order_id: orderId
+  })
 
   // Se tiver cupom, reverter o uso
   if (order.coupon_id) {
@@ -130,4 +95,5 @@ export async function cancelExpiredOrder(orderId: string) {
     .from('orders')
     .update({ status: 'cancelled' })
     .eq('id', orderId)
+    .eq('status', 'pending')
 }

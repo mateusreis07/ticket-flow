@@ -52,6 +52,32 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Add Rate Limit for API routes
+    if (pathname.startsWith('/api/')) {
+      const excluded = ['/api/health', '/api/webhooks', '/api/sentry-test']
+      if (!excluded.some(r => pathname.startsWith(r))) {
+        const { checkRateLimit, getIdentifier } = await import('@/lib/rate-limit')
+        const identifier = getIdentifier(request as any)
+        const rlResult = await checkRateLimit('api', identifier)
+        if (!rlResult.success) {
+          return new NextResponse(
+            JSON.stringify({ error: 'Too many requests' }),
+            {
+              status: rlResult.reason === 'redis_unavailable' ? 503 : 429,
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': String(rlResult.retryAfter ?? 60),
+              }
+            }
+          )
+        }
+      }
+    }
+
+    supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff')
+    supabaseResponse.headers.set('X-Frame-Options', 'SAMEORIGIN')
+    supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block')
+
     return supabaseResponse
   } catch (error) {
     Sentry.captureException(error, {

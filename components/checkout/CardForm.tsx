@@ -225,6 +225,18 @@ export function CardForm({ orderId, totalAmount, onSuccess, onError }: CardFormP
           cpf: cpf.replace(/\D/g, ''),
         })
       })
+
+      if (response.status === 429) {
+        onError('Muitas tentativas de pagamento. Aguarde alguns minutos e tente novamente.')
+        setIsProcessing(false)
+        return
+      }
+      
+      if (response.status === 503) {
+        onError('Serviço temporariamente indisponível. Tente novamente em breve.')
+        setIsProcessing(false)
+        return
+      }
       
       const result = await response.json()
       

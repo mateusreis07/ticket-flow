@@ -2,11 +2,25 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function signIn(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const redirectPath = formData.get('redirectPath') as string
+
+  const hdrs = await headers()
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+
+  const rlResult = await checkRateLimit('auth', ip)
+  if (!rlResult.success) {
+    return {
+      error: rlResult.reason === 'redis_unavailable'
+        ? 'Serviço temporariamente indisponível.'
+        : `Muitas tentativas. Aguarde ${rlResult.retryAfter} segundos.`
+    }
+  }
 
   const supabase = await createClient()
 
@@ -73,8 +87,6 @@ export async function signOut() {
   await supabase.auth.signOut()
   redirect('/')
 }
-
-import { headers } from 'next/headers'
 
 export async function signInWithGoogle(redirectTo?: string) {
   const supabase = await createClient()

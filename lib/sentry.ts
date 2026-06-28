@@ -69,3 +69,16 @@ export function captureWebhookError(
     extra: context,
   })
 }
+
+export function reportSuspiciousActivity(
+  type: 'rate_limit_hit' | 'multiple_cards' | 'brute_force' | 'invalid_webhook',
+  details: Record<string, unknown>
+) {
+  Sentry.captureEvent({
+    level: 'warning',
+    message: '[Security] ' + type,
+    tags: { security: 'true', type },
+    extra: details,
+    fingerprint: ['security', type],
+  })
+}

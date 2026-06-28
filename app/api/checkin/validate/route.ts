@@ -3,8 +3,15 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { CheckinResult } from '@/types'
 import { sendCheckinMilestonePush } from '@/lib/push-notifications'
+import { checkRateLimit, getIdentifier, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(req: Request) {
+  const identifier = getIdentifier(req)
+  const rlResult = await checkRateLimit('scanner', identifier)
+  if (!rlResult.success) {
+    return rateLimitResponse(rlResult)
+  }
+
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()

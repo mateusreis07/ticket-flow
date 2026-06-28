@@ -4,12 +4,23 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { mpPayment, formatAmountForMP } from '@/lib/mercadopago'
 import * as Sentry from '@sentry/nextjs'
+import { checkRateLimit, getIdentifier, rateLimitResponse } from '@/lib/rate-limit'
+import { reportSuspiciousActivity } from '@/lib/sentry'
 
 const pixRequestSchema = z.object({
   orderId: z.string().uuid(),
 })
 
 export async function POST(request: Request) {
+  const identifier = getIdentifier(request)
+  const rlResult = await checkRateLimit('payment', identifier)
+  if (!rlResult.success) {
+    reportSuspiciousActivity('rate_limit_hit', {
+      ip: identifier, route: 'pix'
+    })
+    return rateLimitResponse(rlResult)
+  }
+
   let reqBody: any = null
   let userId: string | null = null
 
